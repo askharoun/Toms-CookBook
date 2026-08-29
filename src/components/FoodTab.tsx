@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useMemo, useRef, useState } from "react";
 import { Copy, ExternalLink, FileJson, Heart, ImageIcon, MoreHorizontal, Pencil, Plus, Search, Star, Trash2, Upload, Utensils, X } from "lucide-react";
 import { useApp } from "@/context/AppContext";
+import { shareOrDownloadFile } from "@/lib/fileExport";
 import { caloriesForEntry, costPerServing, foodToLog, formatCalories, makeId, packageCalories, safeNumber } from "@/lib/utils";
 import type { FoodLogEntry, SavedFood } from "@/types";
 import { ConfirmDialog, EmptyState, Modal } from "./ui";
@@ -40,20 +41,11 @@ export function FoodTab({ date, startInLibrary = false }: { date: string; startI
     const payload = JSON.stringify({ app: "Tom’s CookBook", schemaVersion: 1, exportedAt: new Date().toISOString(), foods: data.savedFoods }, null, 2);
     const file = new File([payload], "toms-cookbook-foods.json", { type: "application/json" });
     try {
-      if (navigator.share && (!navigator.canShare || navigator.canShare({ files: [file] }))) {
-        await navigator.share({ title: "Tom’s CookBook saved foods", text: "My saved food library", files: [file] });
-        notify("Food library shared.");
-        return;
-      }
-      const url = URL.createObjectURL(file);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = file.name;
-      link.click();
-      URL.revokeObjectURL(url);
-      notify("Food JSON downloaded.");
-    } catch (error) {
-      if ((error as DOMException).name !== "AbortError") notify("Couldn’t share the food library.", "error");
+      const result = await shareOrDownloadFile(file, { title: "Tom’s CookBook saved foods", text: "My saved food library" });
+      if (result === "shared") notify("Food library shared.");
+      if (result === "downloaded") notify("Food JSON downloaded.");
+    } catch {
+      notify("Couldn’t export the food library.", "error");
     }
   };
 

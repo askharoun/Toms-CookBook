@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Activity, ChevronRight, Download, Droplets, Flame, LayoutDashboard, Moon, Palette, Plus, Settings, Smartphone, Sparkles, Sun, Target, Upload, Utensils, X } from "lucide-react";
 import { useApp } from "@/context/AppContext";
+import { shareOrDownloadFile } from "@/lib/fileExport";
 import { dateKey, parseStoredData, safeNumber } from "@/lib/utils";
 import type { AppData, Colorway } from "@/types";
 import { ActivityTab } from "./ActivityTab";
@@ -66,19 +67,10 @@ export function AppShell() {
     const payload = JSON.stringify({ ...data, exportedAt: new Date().toISOString() }, null, 2);
     const file = new File([payload], `toms-cookbook-backup-${dateKey()}.json`, { type: "application/json" });
     try {
-      if (navigator.share && (!navigator.canShare || navigator.canShare({ files: [file] }))) {
-        await navigator.share({ title: "Tom’s CookBook backup", text: "Complete Tom’s CookBook data backup", files: [file] });
-      } else {
-        const url = URL.createObjectURL(file);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = file.name;
-        link.click();
-        URL.revokeObjectURL(url);
-      }
-      notify("Complete JSON backup exported.");
-    } catch (error) {
-      if ((error as DOMException).name !== "AbortError") notify("Couldn’t export the backup.", "error");
+      const result = await shareOrDownloadFile(file, { title: "Tom’s CookBook backup", text: "Complete Tom’s CookBook data backup" });
+      if (result !== "cancelled") notify(result === "shared" ? "Complete JSON backup shared." : "Complete JSON backup downloaded.");
+    } catch {
+      notify("Couldn’t export the backup.", "error");
     }
   };
 
