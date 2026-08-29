@@ -42,10 +42,9 @@ export function DashboardTab({ date, onAddFood, onAddActivity, onAddWater }: { d
   };
 
   return (
-    <div className="space-y-5 animate-rise">
-      <section className="grid gap-4 xl:grid-cols-[1.4fr_.9fr]">
-        <div className="card relative overflow-hidden">
-          <div className="absolute -right-24 -top-24 size-72 rounded-full bg-violet-500/10 blur-2xl" />
+    <div className="dashboard-content w-full min-w-0 space-y-5 overflow-x-hidden animate-rise">
+      <section className="grid w-full min-w-0 gap-4 xl:grid-cols-[1.4fr_.9fr]">
+        <div className="card relative">
           <div className="relative flex flex-col items-center gap-6 sm:flex-row sm:items-stretch">
             <div className="grid shrink-0 place-items-center px-2 sm:px-5">
               <ProgressRing value={calorieProgress} size={178} stroke={14}>
@@ -58,7 +57,7 @@ export function DashboardTab({ date, onAddFood, onAddActivity, onAddWater }: { d
             <div className="flex min-w-0 flex-1 flex-col justify-center">
               <div className="mb-5 text-center sm:text-left">
                 <p className="muted text-xs font-bold uppercase tracking-[.15em]">Daily energy</p>
-                <h2 className="heading mt-1 text-2xl">You’re building momentum</h2>
+                <h2 className="heading mt-1 break-words text-2xl">You’re building momentum</h2>
                 <p className="muted mt-1 text-sm">Net calories count food minus active movement.</p>
               </div>
               <div className="grid grid-cols-3 gap-2">
@@ -85,7 +84,7 @@ export function DashboardTab({ date, onAddFood, onAddActivity, onAddWater }: { d
         </div>
       </section>
 
-      <section className="grid grid-cols-3 gap-3">
+      <section className="grid w-full min-w-0 grid-cols-3 gap-3">
         <MacroCard label="Protein" value={totals.protein} goal={140} color="bg-rose-400" />
         <MacroCard label="Carbs" value={totals.carbs} goal={240} color="bg-amber-400" />
         <MacroCard label="Fat" value={totals.fat} goal={70} color="bg-violet-400" />
@@ -125,7 +124,7 @@ export function DashboardTab({ date, onAddFood, onAddActivity, onAddWater }: { d
         </div>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-[1.1fr_.9fr]">
+      <section className="grid w-full min-w-0 gap-4 md:grid-cols-[1.1fr_.9fr]">
         <div className="card">
           <div className="mb-4 flex items-center justify-between"><div><p className="muted text-xs font-bold uppercase tracking-[.15em]">Quick actions</p><h2 className="heading mt-1 text-xl">Log in a tap</h2></div><Plus className="text-violet-500" /></div>
           <div className="grid grid-cols-3 gap-2">
@@ -143,10 +142,9 @@ export function DashboardTab({ date, onAddFood, onAddActivity, onAddWater }: { d
         </div>
       </section>
 
-      <Modal open={weightTiming !== null} onClose={() => setWeightTiming(null)} title={weightTiming === "morning" ? "Morning weight" : "Bedtime weight"} description="Use the same scale and conditions for a clearer trend." width="max-w-sm">
-        <form onSubmit={saveWeight} className="space-y-4">
+      <Modal open={weightTiming !== null} onClose={() => setWeightTiming(null)} title={weightTiming === "morning" ? "Morning weight" : "Bedtime weight"} description="Use the same scale and conditions for a clearer trend." width="max-w-sm" footer={<button className="primary-button w-full" type="submit" form="weight-form"><Scale size={17}/> Save weight</button>}>
+        <form id="weight-form" onSubmit={saveWeight} className="space-y-4">
           <label><span className="label">Weight in pounds</span><input className="input text-lg" name="pounds" type="number" min="50" max="1000" step="0.1" required autoFocus defaultValue={dayWeight.find((entry) => entry.timing === weightTiming)?.pounds} placeholder="182.4" /></label>
-          <button className="primary-button w-full" type="submit"><Scale size={17}/> Save weight</button>
         </form>
       </Modal>
     </div>

@@ -26,13 +26,15 @@ export function Modal({
   title,
   description,
   children,
+  footer,
   width = "max-w-xl",
 }: {
   open: boolean;
   onClose: () => void;
   title: string;
   description?: string;
-  children: React.ReactNode;
+  children?: React.ReactNode;
+  footer?: React.ReactNode;
   width?: string;
 }) {
   useEffect(() => {
@@ -47,16 +49,20 @@ export function Modal({
   }, [open, onClose]);
   if (!open) return null;
   return (
-    <div className="fixed inset-0 isolate z-[200] flex h-[100dvh] items-end justify-center p-0 before:pointer-events-none before:absolute before:-inset-20 before:bg-ink/65 before:backdrop-blur-md sm:items-center sm:p-5" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
-      <div className={`relative z-10 max-h-[92dvh] w-full ${width} overflow-y-auto rounded-t-[2rem] border p-5 shadow-2xl sm:rounded-[2rem] sm:p-6`} style={{ background: "rgb(var(--card))", borderColor: "rgb(var(--line))" }} role="dialog" aria-modal="true" aria-labelledby="modal-title">
-        <div className="mb-5 flex items-start justify-between gap-4">
-          <div>
-            <h2 id="modal-title" className="heading text-xl">{title}</h2>
-            {description && <p className="muted mt-1 text-sm leading-relaxed">{description}</p>}
+    <div className="popup-backdrop fixed inset-0 isolate z-[200] flex items-end justify-center before:pointer-events-none before:absolute before:-inset-20 before:bg-ink/65 before:backdrop-blur-md sm:items-center" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
+      <div className={`popup-dialog popup-panel popup-surface relative z-10 flex w-full ${width} min-w-0 flex-col overflow-hidden rounded-[1.75rem] sm:rounded-[2rem]`} role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <div className="shrink-0 px-5 pt-4 sm:px-6 sm:pt-6">
+          <div className="mx-auto mb-4 h-1 w-10 rounded-full sm:hidden" style={{ background: "rgb(var(--line))" }} aria-hidden="true" />
+          <div className="mb-5 flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <h2 id="modal-title" className="heading break-words text-xl">{title}</h2>
+              {description && <p className="muted mt-1 break-words text-sm leading-relaxed">{description}</p>}
+            </div>
+            <button type="button" className="icon-button shrink-0 border-0 bg-violet-500/7" onClick={onClose} aria-label="Close dialog"><X size={18} /></button>
           </div>
-          <button type="button" className="icon-button shrink-0" onClick={onClose} aria-label="Close dialog"><X size={18} /></button>
         </div>
-        {children}
+        {children && <div className="popup-body min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-5 pb-5 sm:px-6">{children}</div>}
+        {footer && <div className="popup-footer shrink-0 px-5 pb-5 pt-3 sm:px-6 sm:pb-6">{footer}</div>}
       </div>
     </div>
   );
@@ -65,7 +71,7 @@ export function Modal({
 export function Toast({ toast }: { toast: ToastState }) {
   if (!toast) return null;
   return (
-    <div className="fixed left-1/2 top-4 z-[150] flex -translate-x-1/2 items-center gap-2 rounded-2xl border px-4 py-3 text-sm font-bold shadow-xl" style={{ background: "rgb(var(--card))", borderColor: "rgb(var(--line))" }} role="status">
+    <div className="popup-toast popup-surface fixed left-1/2 top-4 z-[150] flex w-[calc(100%-2rem)] max-w-md -translate-x-1/2 items-center gap-2 rounded-2xl px-4 py-3 text-sm font-bold sm:w-auto" role="status">
       {toast.tone === "success" ? <CheckCircle2 className="text-emerald-500" size={18} /> : <XCircle className="text-rose-500" size={18} />}
       {toast.message}
     </div>
@@ -115,12 +121,12 @@ export function EmptyState({ icon, title, text, action }: { icon: React.ReactNod
 
 export function ConfirmDialog({ open, title, description, onClose, onConfirm, confirmLabel = "Delete", tone = "danger" }: { open: boolean; title: string; description: string; onClose: () => void; onConfirm: () => void; confirmLabel?: string; tone?: "danger" | "primary" }) {
   return (
-    <Modal open={open} onClose={onClose} title={title} description={description} width="max-w-sm">
+    <Modal open={open} onClose={onClose} title={title} description={description} width="max-w-sm" footer={
       <div className="flex gap-3">
         <button type="button" className="secondary-button flex-1" onClick={onClose}>Cancel</button>
         <button type="button" className={`min-h-11 flex-1 rounded-xl px-4 text-sm font-bold text-white transition ${tone === "primary" ? "bg-violet-500 hover:brightness-95" : "bg-rose-600 hover:bg-rose-700"}`} style={tone === "primary" ? { backgroundColor: "rgb(var(--accent))" } : undefined} onClick={onConfirm}>{confirmLabel}</button>
       </div>
-    </Modal>
+    } />
   );
 }
 
