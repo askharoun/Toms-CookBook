@@ -10,8 +10,9 @@ export function LogoMark({ size }: { size: number }) {
           <stop offset="1" stopColor="#5723ad" />
         </linearGradient>
       </defs>
-      <rect width="512" height="512" rx="174" fill="url(#logo-gradient)" />
-      <g transform="translate(16 345) scale(.291 -.291)" fill="#f5dca0">
+      <rect width="512" height="512" fill="url(#logo-gradient)" />
+      <rect x="10" y="10" width="492" height="492" rx="154" fill="none" stroke="#ffffff" strokeOpacity=".1" strokeWidth="4" />
+      <g transform="translate(20 340) scale(.265 -.265)" fill="#f5dca0">
         <path d={T_PATH} />
         <g transform="translate(933 0)"><path d={C_PATH} /></g>
       </g>
