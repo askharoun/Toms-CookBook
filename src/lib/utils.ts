@@ -92,6 +92,8 @@ export function foodToLog(food: SavedFood, date: string, servings: number): Food
   return {
     id: makeId("foodlog"),
     foodId: food.id,
+    image: food.image, imageLarge: food.imageLarge, barcode: food.barcode, brand: food.brand,
+    servingGrams: food.servingGrams, nutritionBasis: food.nutritionBasis,
     date,
     name: food.name,
     servings,

@@ -1,8 +1,9 @@
 "use client";
 
-import Image from "next/image";
+import { FoodPhoto } from "./FoodPhoto";
+import { BarcodeFlow } from "./BarcodeFlow";
 import { useMemo, useRef, useState } from "react";
-import { Copy, ExternalLink, FileJson, Heart, ImageIcon, MoreHorizontal, Pencil, Plus, Search, Star, Trash2, Upload, Utensils, X } from "lucide-react";
+import { Copy, ExternalLink, FileJson, Heart, ScanBarcode, MoreHorizontal, Pencil, Plus, Search, Star, Trash2, Upload, Utensils, X } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { shareOrDownloadFile } from "@/lib/fileExport";
 import { caloriesForEntry, costPerServing, foodToLog, formatCalories, makeId, packageCalories, safeNumber } from "@/lib/utils";
@@ -10,7 +11,8 @@ import type { FoodLogEntry, SavedFood } from "@/types";
 import { ConfirmDialog, EmptyState, Modal } from "./ui";
 
 export function FoodTab({ date, startInLibrary = false }: { date: string; startInLibrary?: boolean }) {
-  const { data, addFood, updateFood, deleteFood, setFoods, addFoodLog, updateFoodLog, deleteFoodLog, notify } = useApp();
+  const { data, confirmation, addFood, updateFood, deleteFood, setFoods, addFoodLog, updateFoodLog, deleteFoodLog, notify } = useApp();
+  const [scanner, setScanner] = useState<"camera" | "type" | null>(null);
   const [view, setView] = useState<"log" | "library">(() => startInLibrary ? "library" : "log");
   const [search, setSearch] = useState("");
   const [favoritesOnly, setFavoritesOnly] = useState(false);
@@ -54,7 +56,7 @@ export function FoodTab({ date, startInLibrary = false }: { date: string; startI
     try {
       const payload = JSON.parse(await file.text()) as { foods?: SavedFood[] } | SavedFood[];
       const imported = Array.isArray(payload) ? payload : payload.foods;
-      if (!Array.isArray(imported) || !imported.every((item) => item && typeof item.id === "string" && typeof item.name === "string" && Number(item.caloriesPerServing) > 0)) throw new Error("Invalid food export");
+      if (!Array.isArray(imported) || !imported.every((item) => item && typeof item.id === "string" && typeof item.name === "string" && typeof item.caloriesPerServing === "number" && Number.isFinite(item.caloriesPerServing) && item.caloriesPerServing >= 0)) throw new Error("Invalid food export");
       const importedKeys = new Set(imported.flatMap((item) => [item.id, item.name.trim().toLowerCase()]));
       const localOnly = data.savedFoods.filter((item) => !importedKeys.has(item.id) && !importedKeys.has(item.name.trim().toLowerCase()));
       setFoods([...imported, ...localOnly]);
@@ -76,6 +78,7 @@ export function FoodTab({ date, startInLibrary = false }: { date: string; startI
 
   return (
     <div className="space-y-5 animate-rise">
+      <div className="flex flex-wrap gap-2"><button className="primary-button" onClick={() => setScanner("camera")}><ScanBarcode size={18}/> Scan barcode</button><button className="secondary-button" onClick={() => setScanner("type")}>Type barcode</button><button className="secondary-button" onClick={() => setFoodEditor("new")}>Manual entry</button></div>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex rounded-xl bg-violet-500/7 p-1">
           <button type="button" className={`rounded-lg px-4 py-2.5 text-sm font-bold transition ${view === "log" ? "bg-violet-500 text-white shadow" : "muted"}`} onClick={() => setView("log")}>Daily log <span className="ml-1 opacity-70">{log.length}</span></button>
@@ -96,8 +99,8 @@ export function FoodTab({ date, startInLibrary = false }: { date: string; startI
             <button type="button" className="primary-button" onClick={() => setView("library")}><Plus size={17}/> Add food</button>
           </div>
           {log.length ? <><div className="space-y-2">{(showAllLog ? log : log.slice(0, 5)).map((entry) => (
-            <div key={entry.id} className="subtle-card flex items-center gap-3 p-3.5">
-              <div className="grid size-11 shrink-0 place-items-center rounded-xl bg-orange-500/10 text-orange-500"><Utensils size={19}/></div>
+            <div key={entry.id} className={`subtle-card flex items-center gap-3 p-3.5 ${confirmation?.id === entry.id ? "just-logged" : ""}`}>
+              <FoodPhoto image={entry.image} imageLarge={entry.imageLarge} name={entry.name} />
               <div className="min-w-0 flex-1"><p className="truncate text-sm font-bold">{entry.name}</p><p className="muted truncate text-xs">{entry.servings} × {entry.servingDescription}</p></div>
               <p className="heading shrink-0 text-sm">{formatCalories(caloriesForEntry(entry))}</p>
               <button type="button" className="icon-button !size-9" onClick={() => setEditLog(entry)} aria-label={`Edit ${entry.name} log`}><Pencil size={15}/></button>
@@ -119,15 +122,17 @@ export function FoodTab({ date, startInLibrary = false }: { date: string; startI
         </>
       )}
 
+      {scanner && <BarcodeFlow date={date} initialCamera={scanner === "camera"} onClose={() => setScanner(null)} onManual={() => { setScanner(null); setFoodEditor("new"); }} onLogged={() => setView("log")} />}
       <FoodEditor key={foodEditor === "new" ? "new" : foodEditor?.id || "closed"} open={foodEditor !== null} food={foodEditor === "new" ? null : foodEditor} onClose={() => setFoodEditor(null)} onSave={(food) => {
         if (foodEditor === "new") addFood(food); else updateFood(food);
         notify(foodEditor === "new" ? "Food saved to your library." : "Food updated.");
+        if (foodEditor === "new") setLogFood(food);
         setFoodEditor(null);
       }}/>
       <LogFoodModal key={logFood?.id || "closed"} food={logFood} date={date} onClose={() => setLogFood(null)} onSave={(servings) => {
         if (!logFood) return;
         addFoodLog(foodToLog(logFood, date, servings));
-        notify(`${logFood.name} added to the daily log.`);
+
         setLogFood(null);
         setView("log");
       }}/>
@@ -142,7 +147,7 @@ function FoodCard({ food, onLog, onEdit, onDelete, onDuplicate, onFavorite }: { 
   return (
     <article className={`card group relative overflow-visible !p-0 ${menu ? "z-40" : "z-0"}`}>
       <div className="relative h-36 bg-violet-500/8">
-        <div className="absolute inset-0 overflow-hidden rounded-t-[1.6rem]">{food.image ? <Image src={food.image} alt="" fill sizes="(min-width: 1536px) 30vw, (min-width: 640px) 50vw, 100vw" unoptimized className="object-cover transition duration-500 group-hover:scale-105"/> : <div className="grid h-full place-items-center text-violet-300"><ImageIcon size={36}/></div>}</div>
+        <div className="absolute inset-0 overflow-hidden rounded-t-[1.6rem]"><FoodPhoto image={food.image} imageLarge={food.imageLarge} name={food.name} className="!h-full !w-full !rounded-none" /></div>
         <button type="button" onClick={onFavorite} className="absolute left-3 top-3 grid size-9 place-items-center rounded-xl bg-white/90 text-violet-600 shadow backdrop-blur" aria-label={food.favorite ? `Unfavorite ${food.name}` : `Favorite ${food.name}`}><Heart size={17} fill={food.favorite ? "currentColor" : "none"}/></button>
         <button type="button" onClick={() => setMenu((value) => !value)} className="absolute right-3 top-3 grid size-9 place-items-center rounded-xl bg-white/90 text-ink shadow backdrop-blur" aria-label={`More options for ${food.name}`}><MoreHorizontal size={18}/></button>
         {menu && <div className="absolute right-3 top-14 z-[70] w-40 rounded-xl border bg-white p-1.5 text-ink shadow-2xl">
@@ -164,7 +169,8 @@ function FoodStat({ value, label }: { value: string; label: string }) { return <
 
 function FoodEditor({ open, food, onClose, onSave }: { open: boolean; food: SavedFood | null; onClose: () => void; onSave: (food: SavedFood) => void }) {
   const { notify } = useApp();
-  const [calories, setCalories] = useState(food?.caloriesPerServing || 0);
+  const [calorieInput, setCalorieInput] = useState(food?.caloriesPerServing?.toString() ?? "");
+  const calories = Number(calorieInput);
   const [quantity, setQuantity] = useState(food?.packageQuantity || 1);
   const [price, setPrice] = useState(food?.price || 0);
   const [image, setImage] = useState(food?.image || "");
@@ -183,10 +189,14 @@ function FoodEditor({ open, food, onClose, onSave }: { open: boolean; food: Save
     const form = new FormData(event.currentTarget);
     const name = String(form.get("name") || "").trim();
     const servingDescription = String(form.get("servingDescription") || "").trim();
-    if (!name || !servingDescription || calories <= 0 || quantity <= 0 || price < 0) { notify("Complete the required food details with valid values.", "error"); return; }
+    if (!name || !servingDescription || calorieInput === "" || !Number.isFinite(calories) || calories < 0 || quantity <= 0 || price < 0) { notify("Complete the required food details with valid values.", "error"); return; }
     onSave({
+      ...food,
       id: food?.id || makeId("food"), name, image: image.trim() || undefined,
       purchaseLink: String(form.get("purchaseLink") || "").trim() || undefined,
+      imageLarge: image === food?.image ? food.imageLarge : undefined,
+      servingGrams: servingDescription === food?.servingDescription ? food.servingGrams : undefined,
+      nutritionBasis: servingDescription === food?.servingDescription ? food.nutritionBasis : undefined,
       caloriesPerServing: calories, servingDescription, packageQuantity: quantity, price,
       protein: optionalNumber(form.get("protein")), carbs: optionalNumber(form.get("carbs")), fat: optionalNumber(form.get("fat")),
       notes: String(form.get("notes") || "").trim() || undefined,
@@ -200,7 +210,7 @@ function FoodEditor({ open, food, onClose, onSave }: { open: boolean; food: Save
         <div className="grid gap-4 sm:grid-cols-2">
           <label><span className="label">Food name *</span><input className="input" name="name" required defaultValue={food?.name} placeholder="Large eggs" autoFocus/></label>
           <label><span className="label">Serving description *</span><input className="input" name="servingDescription" required defaultValue={food?.servingDescription} placeholder="1 egg"/></label>
-          <label><span className="label">Calories per serving *</span><input className="input" name="calories" type="number" min="1" step="1" required value={calories || ""} onChange={(event) => setCalories(Number(event.target.value))} placeholder="80"/></label>
+          <label><span className="label">Calories per serving *</span><input className="input" name="calories" type="number" min="0" step="any" required value={calorieInput} onChange={(event) => setCalorieInput(event.target.value)} placeholder="80"/></label>
           <label><span className="label">Servings in package *</span><input className="input" name="quantity" type="number" min="0.01" step="0.01" required value={quantity || ""} onChange={(event) => setQuantity(Number(event.target.value))} placeholder="36"/></label>
           <label><span className="label">Package price ($) *</span><input className="input" name="price" type="number" min="0" step="0.01" required value={price} onChange={(event) => setPrice(Number(event.target.value))} placeholder="4.94"/></label>
           <label><span className="label">Purchase link</span><input className="input" name="purchaseLink" type="url" defaultValue={food?.purchaseLink} placeholder="https://…"/></label>
@@ -219,9 +229,18 @@ function FoodEditor({ open, food, onClose, onSave }: { open: boolean; food: Save
 
 function optionalNumber(value: FormDataEntryValue | null) { if (value === null || String(value).trim() === "") return undefined; return safeNumber(value); }
 
-function LogFoodModal({ food, date, onClose, onSave }: { food: SavedFood | null; date: string; onClose: () => void; onSave: (servings: number) => void }) {
-  const [servings, setServings] = useState(1);
-  return <Modal open={food !== null} onClose={onClose} title={`Log ${food?.name || "food"}`} description={`How many ${food?.servingDescription || "servings"} did you eat?`} width="max-w-sm" footer={<button type="submit" form="log-food-form" className="primary-button w-full" disabled={!servings || servings <= 0}><Plus size={17}/> Add to log</button>}><form id="log-food-form" onSubmit={(event) => { event.preventDefault(); if (servings > 0) onSave(servings); }} className="space-y-4"><label><span className="label">Servings</span><input className="input text-lg" type="number" min="0.01" max="100" step="0.01" value={servings} onChange={(event) => setServings(Number(event.target.value))} required autoFocus/></label><div className="rounded-2xl bg-violet-500/7 p-4 text-center"><span className="muted text-xs">Adds to {date}</span><p className="heading mt-1 break-words text-2xl">{formatCalories((food?.caloriesPerServing || 0) * servings)} calories</p></div></form></Modal>;
+export function LogFoodModal({ food, date, onClose, onSave }: { food: SavedFood | null; date: string; onClose: () => void; onSave: (servings: number) => void }) {
+  const [amount, setAmount] = useState(1);
+  const [unit, setUnit] = useState("servings");
+  const servings = unit === "grams" && food?.servingGrams ? amount / food.servingGrams : amount;
+  const valid = Number.isFinite(servings) && servings > 0;
+  return <Modal open={food !== null} onClose={onClose} title={`Log ${food?.name || "food"}`} description={food?.servingDescription} width="max-w-sm" footer={<button type="submit" form="log-food-form" className="primary-button w-full" disabled={!valid}><Plus size={17}/> Add to log</button>}>
+    <form id="log-food-form" onSubmit={(event) => { event.preventDefault(); if (valid) onSave(servings); }} className="space-y-4">
+      <label><span className="label">Amount eaten</span><input className="input text-lg" type="number" min="0.01" step="any" value={amount || ""} onChange={(event) => setAmount(Number(event.target.value))} required autoFocus/></label>
+      <label><span className="label">Unit</span><select className="input" value={unit} onChange={(event) => { setUnit(event.target.value); setAmount(event.target.value === "grams" ? food?.servingGrams || 1 : 1); }}><option value="servings">Servings ({food?.servingDescription})</option>{food?.servingGrams && <option value="grams">Grams</option>}</select></label>
+      <div className="rounded-2xl bg-violet-500/7 p-4 text-center"><span className="muted text-xs">Adds to {date}</span><p className="heading mt-1 break-words text-2xl">{formatCalories((food?.caloriesPerServing || 0) * (valid ? servings : 0))} calories</p></div>
+    </form>
+  </Modal>;
 }
 
 function EditLogModal({ entry, onClose, onSave }: { entry: FoodLogEntry | null; onClose: () => void; onSave: (entry: FoodLogEntry) => void }) {

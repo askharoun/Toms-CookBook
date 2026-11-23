@@ -67,3 +67,41 @@ npm run build
 ```
 
 The core-flow test creates a saved food, logs servings, adds calories burned and water, verifies the net-calorie formula and macros, serializes the entire record, reloads it through the production persistence helpers, and confirms the totals remain identical after the simulated refresh.
+
+
+## Barcode lookup and refreshed daily workflow
+
+The app uses the supplied TC logo and native SVG animations from `assets/`.
+Runtime copies and install icons live in `public/assets/` and `public/icons/`.
+The confirmation SVG plays once per saved meal; reduced-motion users receive a
+static check. Hydration always comes from saved water records, not the GIF.
+
+`GET /api/barcode?code=0012345678905` looks up Open Food Facts server-side with
+an app-identifying User-Agent and a 10-second timeout. Only 8?14 digit strings
+are accepted. Product photos fall back from small to large to the TC thumbnail.
+Open Food Facts is credited in the preview. Barcode queries go to the server and
+Open Food Facts; the personal diary remains in browser storage.
+
+Camera use requires HTTPS (or localhost) and browser permission. The rear camera
+is preferred. Native BarcodeDetector is used when available; a local EAN-13,
+EAN-8 and UPC-A scanline decoder provides a fallback. Hold the barcode horizontally
+inside the frame. Two matching reads trigger one lookup. Closing the scanner,
+typing a code, or hiding the page stops the stream. UPC-A is represented as EAN-13
+with a leading zero by the software decoder. Manual entry remains available for
+unrecognized products, missing nutrition, unavailable cameras and offline lookup.
+
+### Verification
+
+Run `npm test`, `npm run typecheck`, `npm run lint`, and `npm run build`.
+Tests use worker threads so they also run where Windows child-process forks are
+restricted. Barcode tests cover lookup errors, leading zeros, photos, portions,
+missing versus zero calories, volume/mass separation, snapshots, repeated entry IDs,
+and updated dashboard totals. Decoder tests cover EAN/UPC fixtures and checksums.
+
+A real-phone acceptance pass should check rear-camera selection, permission denial,
+focus in typical lighting, closing during initialization, duplicate reads, and
+camera shutdown when backgrounding. Also check two successive ?Meal logged?
+animations, water GIF replay, reduced-motion static states, image fallback,
+keyboard/bottom-sheet layout, and installed PWA icons. Automated UI/browser checks
+could not run in the implementation environment because Windows denied browser
+process launch; synthetic decoding tests do not replace real-camera testing.

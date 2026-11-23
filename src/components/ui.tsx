@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
+import Image from "next/image";
+import { useEffect, useId, useRef, useState } from "react";
 import { CheckCircle2, ChevronLeft, ChevronRight, X, XCircle } from "lucide-react";
 import { displayDate, offsetDate } from "@/lib/utils";
 import type { ToastState } from "@/types";
@@ -8,9 +9,7 @@ import type { ToastState } from "@/types";
 export function Logo({ compact = false }: { compact?: boolean }) {
   return (
     <div className="flex items-center gap-3" aria-label="Tom’s CookBook">
-      <div className="relative size-11 shrink-0 overflow-hidden rounded-[15px] shadow-glow" style={{ background: "linear-gradient(145deg, rgb(var(--accent-soft)), rgb(var(--accent-deep)))", color: "#f5dca0" }}>
-        <span className="absolute inset-0 grid place-items-center pt-1 text-[25px] leading-none" style={{ fontFamily: "var(--font-logo), cursive" }}>TC</span>
-      </div>
+      <Image src="/icons/tc-64.png" alt="TC chef?s hat" width="48" height="48" className="rounded-2xl" />
       {!compact && (
         <div className="leading-tight">
           <p className="heading whitespace-nowrap text-[15px]">Tom’s <span className="text-violet-500">CookBook</span></p>
@@ -37,12 +36,25 @@ export function Modal({
   footer?: React.ReactNode;
   width?: string;
 }) {
+  const panel = useRef<HTMLDivElement>(null);
+  const titleId = useId();
   useEffect(() => {
     if (!open) return;
-    const onKey = (event: KeyboardEvent) => event.key === "Escape" && onClose();
+    const previous = document.activeElement as HTMLElement | null;
+    const focusable = () => Array.from(panel.current?.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled]), select, textarea, a[href], [tabindex="0"]') || []);
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+      if (event.key !== "Tab") return;
+      const elements = focusable(), first = elements[0], last = elements[elements.length - 1];
+      if (event.shiftKey && (document.activeElement === first || !panel.current?.contains(document.activeElement))) { event.preventDefault(); last?.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+    };
+    const timer = setTimeout(() => { if (!panel.current?.contains(document.activeElement)) focusable()[0]?.focus(); }, 0);
     document.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
     return () => {
+      clearTimeout(timer);
+      previous?.focus();
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = "";
     };
@@ -50,12 +62,12 @@ export function Modal({
   if (!open) return null;
   return (
     <div className="popup-backdrop fixed inset-0 isolate z-[200] flex items-end justify-center before:pointer-events-none before:absolute before:-inset-20 before:bg-ink/65 before:backdrop-blur-md sm:items-center" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
-      <div className={`popup-dialog popup-panel popup-surface relative z-10 flex w-full ${width} min-w-0 flex-col overflow-hidden rounded-[1.75rem] sm:rounded-[2rem]`} role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div className={`popup-dialog popup-panel popup-surface relative z-10 flex w-full ${width} min-w-0 flex-col overflow-hidden rounded-[1.75rem] sm:rounded-[2rem]`} ref={panel} role="dialog" aria-modal="true" aria-labelledby={titleId}>
         <div className="shrink-0 px-5 pt-4 sm:px-6 sm:pt-6">
           <div className="mx-auto mb-4 h-1 w-10 rounded-full sm:hidden" style={{ background: "rgb(var(--line))" }} aria-hidden="true" />
           <div className="mb-5 flex items-start justify-between gap-4">
             <div className="min-w-0">
-              <h2 id="modal-title" className="heading break-words text-xl">{title}</h2>
+              <h2 id={titleId} className="heading break-words text-xl">{title}</h2>
               {description && <p className="muted mt-1 break-words text-sm leading-relaxed">{description}</p>}
             </div>
             <button type="button" className="icon-button shrink-0 border-0 bg-violet-500/7" onClick={onClose} aria-label="Close dialog"><X size={18} /></button>
@@ -95,13 +107,18 @@ export function DateNavigator({ date, setDate }: { date: string; setDate: (date:
 export function ProgressRing({ value, size = 150, stroke = 12, children }: { value: number; size?: number; stroke?: number; children?: React.ReactNode }) {
   const radius = (size - stroke) / 2;
   const circumference = radius * Math.PI * 2;
-  const progress = Math.min(Math.max(value, 0), 100);
+  const [progress, setProgress] = useState(0);
+  const gradientId = useId();
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setProgress(Math.min(Math.max(value, 0), 100)));
+    return () => cancelAnimationFrame(frame);
+  }, [value]);
   return (
     <div className="relative inline-grid place-items-center" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="-rotate-90" aria-hidden="true">
         <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="rgb(var(--line))" strokeWidth={stroke} />
-        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="url(#ring-gradient)" strokeLinecap="round" strokeWidth={stroke} strokeDasharray={circumference} strokeDashoffset={circumference - (progress / 100) * circumference} />
-        <defs><linearGradient id="ring-gradient"><stop stopColor="rgb(var(--accent-soft))" /><stop offset="1" stopColor="rgb(var(--accent-deep))" /></linearGradient></defs>
+        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke={`url(#${gradientId})`} strokeLinecap="round" strokeWidth={stroke} strokeDasharray={circumference} className="progress-arc" strokeDashoffset={circumference - (progress / 100) * circumference} />
+        <defs><linearGradient id={gradientId}><stop stopColor="rgb(var(--accent-soft))" /><stop offset="1" stopColor="rgb(var(--accent-deep))" /></linearGradient></defs>
       </svg>
       <div className="absolute inset-0 grid place-items-center text-center">{children}</div>
     </div>

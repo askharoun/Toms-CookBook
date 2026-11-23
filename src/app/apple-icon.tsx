@@ -1,12 +1,5 @@
-import { ImageResponse } from "next/og";
-import { LogoMark } from "@/components/LogoMark";
-
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 export const size = { width: 180, height: 180 };
 export const contentType = "image/png";
-
-export default function AppleIcon() {
-  return new ImageResponse(
-    <div style={{ width: "100%", height: "100%", display: "flex" }}><LogoMark size={180} /></div>,
-    size,
-  );
-}
+export default async function Icon() { return new Response(await readFile(join(process.cwd(), "public/icons/tc-180.png")), { headers: { "Content-Type": "image/png" } }); }

@@ -9,7 +9,7 @@ export function createInitialData(): AppData {
       displayName: "Tom",
       calorieGoal: 2200,
       waterGoalOz: 96,
-      theme: "light",
+      theme: "dark",
       colorway: "violet",
     },
     savedFoods: [],

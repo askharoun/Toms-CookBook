@@ -1,11 +1,4 @@
-import { ImageResponse } from "next/og";
-import { LogoMark } from "@/components/LogoMark";
-
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 export const dynamic = "force-static";
-
-export function GET() {
-  return new ImageResponse(
-    <div style={{ width: "100%", height: "100%", display: "flex" }}><LogoMark size={192} /></div>,
-    { width: 192, height: 192 },
-  );
-}
+export async function GET() { return new Response(await readFile(join(process.cwd(), "public/icons/tc-192.png")), { headers: { "Content-Type": "image/png" } }); }

@@ -9,7 +9,16 @@ export interface Nutrition {
   fat?: number;
 }
 
-export interface SavedFood extends Nutrition {
+export interface ProductMetadata {
+  image?: string;
+  imageLarge?: string;
+  barcode?: string;
+  brand?: string;
+  servingGrams?: number;
+  nutritionBasis?: "100g" | "100ml" | "serving";
+}
+
+export interface SavedFood extends Nutrition, ProductMetadata {
   id: string;
   name: string;
   image?: string;
@@ -23,7 +32,7 @@ export interface SavedFood extends Nutrition {
   createdAt: string;
 }
 
-export interface FoodLogEntry extends Nutrition {
+export interface FoodLogEntry extends Nutrition, ProductMetadata {
   id: string;
   foodId?: string;
   date: string;

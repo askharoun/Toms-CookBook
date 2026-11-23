@@ -27,7 +27,7 @@ export function WaterTab({ date, requestedAction, onActionHandled }: { date: str
 
   const addAmount = (amountOz: number) => {
     addWater({ id: makeId("water"), date, amountOz, loggedAt: new Date().toISOString() });
-    notify(`${amountOz} oz of water added.`);
+
   };
   const handleUndo = () => {
     if (undoWater(date)) notify("Latest water entry undone."); else notify("There’s no water entry to undo.", "error");

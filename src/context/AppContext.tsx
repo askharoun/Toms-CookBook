@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type {
   ActivityEntry,
   AppData,
@@ -14,9 +14,11 @@ import type {
   WeightEntry,
 } from "@/types";
 import { createInitialData } from "@/lib/seed";
-import { LEGACY_STORAGE_KEYS, loadAppData, saveAppData } from "@/lib/utils";
+import { loadAppData, saveAppData } from "@/lib/utils";
 
+type Confirmation = { id: string; kind: "food" | "water"; amount?: number } | null;
 interface AppContextValue {
+  confirmation: Confirmation;
   data: AppData;
   hydrated: boolean;
   toast: ToastState;
@@ -48,18 +50,22 @@ const AppContext = createContext<AppContextValue | null>(null);
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [data, setData] = useState<AppData>(() => createInitialData());
   const [hydrated, setHydrated] = useState(false);
+  const [confirmation, setConfirmation] = useState<Confirmation>(null);
+  const pendingConfirmation = useRef<Confirmation>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const [toast, setToast] = useState<ToastState>(null);
 
   const notify = useCallback((message: string, tone: "success" | "error" = "success") => {
     setToast({ message, tone });
-    window.setTimeout(() => setToast(null), 2600);
+    clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(null), 2600);
   }, []);
 
   useEffect(() => {
     let stored: AppData | null = null;
     let storageUnavailable = false;
     try {
-      LEGACY_STORAGE_KEYS.forEach((key) => localStorage.removeItem(key));
+      // Keep legacy storage intact for recovery and older backups.
       stored = loadAppData(localStorage);
     } catch {
       storageUnavailable = true;
@@ -76,7 +82,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (!hydrated) return;
     try {
       saveAppData(localStorage, data);
+      if (pendingConfirmation.current) {
+        const saved = pendingConfirmation.current; pendingConfirmation.current = null;
+        setTimeout(() => setConfirmation(saved), 0);
+      }
     } catch {
+      pendingConfirmation.current = null;
       window.setTimeout(() => notify("Storage is full. Export a backup or remove large product images.", "error"), 0);
     }
     document.documentElement.classList.toggle("dark", data.profile.theme === "dark");
@@ -88,8 +99,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     navigator.serviceWorker.register("/sw.js").catch(() => undefined);
   }, []);
 
+  useEffect(() => {
+    if (!confirmation) return;
+    const timer = setTimeout(() => setConfirmation(null), 2400);
+    return () => clearTimeout(timer);
+  }, [confirmation]);
+
   const value = useMemo<AppContextValue>(() => ({
     data,
+    confirmation,
     hydrated,
     toast,
     notify,
@@ -97,14 +115,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     updateFood: (food) => setData((current) => ({ ...current, savedFoods: current.savedFoods.map((item) => item.id === food.id ? food : item) })),
     deleteFood: (id) => setData((current) => ({ ...current, savedFoods: current.savedFoods.filter((item) => item.id !== id) })),
     setFoods: (foods) => setData((current) => ({ ...current, savedFoods: foods })),
-    addFoodLog: (entry) => setData((current) => ({ ...current, foodLog: [entry, ...current.foodLog] })),
+    addFoodLog: (entry) => { pendingConfirmation.current = { id: entry.id, kind: "food" }; setData((current) => ({ ...current, foodLog: [entry, ...current.foodLog] })); },
     updateFoodLog: (entry) => setData((current) => ({ ...current, foodLog: current.foodLog.map((item) => item.id === entry.id ? entry : item) })),
     deleteFoodLog: (id) => setData((current) => ({ ...current, foodLog: current.foodLog.filter((item) => item.id !== id) })),
     addActivity: (entry) => setData((current) => ({ ...current, activityLog: [entry, ...current.activityLog] })),
     deleteActivity: (id) => setData((current) => ({ ...current, activityLog: current.activityLog.filter((item) => item.id !== id) })),
     addSavedWorkout: (entry) => setData((current) => ({ ...current, savedWorkouts: [entry, ...current.savedWorkouts] })),
     deleteSavedWorkout: (id) => setData((current) => ({ ...current, savedWorkouts: current.savedWorkouts.filter((item) => item.id !== id) })),
-    addWater: (entry) => setData((current) => ({ ...current, waterLog: [...current.waterLog, entry] })),
+    addWater: (entry) => { pendingConfirmation.current = { id: entry.id, kind: "water", amount: entry.amountOz }; setData((current) => ({ ...current, waterLog: [...current.waterLog, entry] })); },
     deleteWater: (id) => setData((current) => ({ ...current, waterLog: current.waterLog.filter((item) => item.id !== id) })),
     undoWater: (date) => {
       const entries = data.waterLog.filter((item) => item.date === date).sort((a, b) => b.loggedAt.localeCompare(a.loggedAt));
@@ -118,7 +136,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setTheme: (theme) => setData((current) => ({ ...current, profile: { ...current.profile, theme } })),
     setColorway: (colorway) => setData((current) => ({ ...current, profile: { ...current.profile, colorway } })),
     replaceData: (nextData) => setData({ ...nextData, profile: { ...nextData.profile, colorway: nextData.profile.colorway || "violet" } }),
-  }), [data, hydrated, notify, toast]);
+  }), [data, hydrated, notify, toast, confirmation]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }

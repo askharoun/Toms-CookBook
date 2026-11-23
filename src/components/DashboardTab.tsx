@@ -1,5 +1,6 @@
 "use client";
 
+import { DailyFoodActions } from "./DailyFoodActions";
 import { useMemo, useState } from "react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Activity, ArrowDown, ArrowUp, BedDouble, Droplets, Flame, Moon, Plus, Scale, Sunrise, Utensils } from "lucide-react";
@@ -44,13 +45,13 @@ export function DashboardTab({ date, onAddFood, onAddActivity, onAddWater }: { d
   return (
     <div className="dashboard-content w-full min-w-0 space-y-5 overflow-x-hidden animate-rise">
       <section className="grid w-full min-w-0 gap-4 xl:grid-cols-[1.4fr_.9fr]">
-        <div className="card relative">
+        <div className="card energy-card relative">
           <div className="relative flex flex-col items-center gap-6 sm:flex-row sm:items-stretch">
             <div className="grid shrink-0 place-items-center px-2 sm:px-5">
-              <ProgressRing value={calorieProgress} size={178} stroke={14}>
+              <ProgressRing value={calorieProgress} size={210} stroke={12}>
                 <div>
-                  <span className="heading block text-3xl">{formatCalories(Math.max(totals.remaining, 0))}</span>
-                  <span className="muted text-xs font-semibold">cal remaining</span>
+                  <span className="heading block text-5xl">{formatCalories(totals.eaten)}</span>
+                  <span className="muted text-xs font-semibold">calories eaten</span>
                 </div>
               </ProgressRing>
             </div>
@@ -58,7 +59,7 @@ export function DashboardTab({ date, onAddFood, onAddActivity, onAddWater }: { d
               <div className="mb-5 text-center sm:text-left">
                 <p className="muted text-xs font-bold uppercase tracking-[.15em]">Daily energy</p>
                 <h2 className="heading mt-1 break-words text-2xl">You’re building momentum</h2>
-                <p className="muted mt-1 text-sm">Net calories count food minus active movement.</p>
+                <p className="muted mt-1 text-sm">{formatCalories(Math.abs(totals.remaining))} cal {totals.remaining < 0 ? "over" : "remaining"} ? {formatCalories(data.profile.calorieGoal)} goal</p>
               </div>
               <div className="grid grid-cols-3 gap-2">
                 <MiniMetric icon={<Utensils size={16} />} label="Eaten" value={totals.eaten} color="text-orange-500" />
@@ -72,6 +73,15 @@ export function DashboardTab({ date, onAddFood, onAddActivity, onAddWater }: { d
           </div>
         </div>
 
+        <DailyFoodActions date={date} onManual={onAddFood} />
+      </section>
+
+      <section className="grid w-full min-w-0 grid-cols-3 gap-3">
+        <MacroCard label="Protein" value={totals.protein} goal={140} color="bg-rose-400" />
+        <MacroCard label="Carbs" value={totals.carbs} goal={240} color="bg-amber-400" />
+        <MacroCard label="Fat" value={totals.fat} goal={70} color="bg-violet-400" />
+      </section>
+
         <div className="card flex flex-col">
           <div className="flex items-start justify-between">
             <div><p className="muted text-xs font-bold uppercase tracking-[.15em]">Hydration</p><h2 className="heading mt-1 text-xl">Water today</h2></div>
@@ -82,13 +92,6 @@ export function DashboardTab({ date, onAddFood, onAddActivity, onAddWater }: { d
           <p className="muted mt-2 text-xs">{Math.round(waterProgress)}% of your daily goal</p>
           <button type="button" className="secondary-button mt-auto w-full border-sky-500/20 text-sky-600 dark:text-sky-400" onClick={onAddWater}><Plus size={17} /> Add water</button>
         </div>
-      </section>
-
-      <section className="grid w-full min-w-0 grid-cols-3 gap-3">
-        <MacroCard label="Protein" value={totals.protein} goal={140} color="bg-rose-400" />
-        <MacroCard label="Carbs" value={totals.carbs} goal={240} color="bg-amber-400" />
-        <MacroCard label="Fat" value={totals.fat} goal={70} color="bg-violet-400" />
-      </section>
 
       <section className="card">
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">

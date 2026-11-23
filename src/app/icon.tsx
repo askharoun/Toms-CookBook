@@ -1,12 +1,5 @@
-import { ImageResponse } from "next/og";
-import { LogoMark } from "@/components/LogoMark";
-
-export const size = { width: 512, height: 512 };
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
+export const size = { width: 32, height: 32 };
 export const contentType = "image/png";
-
-export default function Icon() {
-  return new ImageResponse(
-    <div style={{ width: "100%", height: "100%", display: "flex" }}><LogoMark size={512} /></div>,
-    size,
-  );
-}
+export default async function Icon() { return new Response(await readFile(join(process.cwd(), "public/icons/tc-32.png")), { headers: { "Content-Type": "image/png" } }); }

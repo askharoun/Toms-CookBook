@@ -53,3 +53,19 @@ Resting or basal energy is not part of `activeCalories`. Activity sources are ei
 ## Persistence and migration
 
 `saveAppData` serializes the complete root document after state changes. `loadAppData` validates the schema version before accepting stored data. Future breaking changes should increment `version` and migrate older documents before rendering.
+
+
+## Optional barcode metadata
+
+Saved foods and diary snapshots may include `barcode` (a string, including leading zeros),
+`brand`, `image`, `imageLarge`, `servingGrams`, and `nutritionBasis` (`serving`, `100g`, or
+`100ml`). All fields are optional; schema version and the storage key remain unchanged.
+Existing backups continue to load. Food-to-diary conversion copies the metadata, so
+historic photos do not depend on the current library item.
+
+`caloriesPerServing` and macros always describe the saved record's
+`servingDescription`. A record labeled `100 g` uses 100 g as one stored serving;
+logging 60 g stores 0.6 servings. A product with a known gram serving weight may
+also be entered as servings. Milliliters are never converted to grams. Missing
+calories prevent barcode logging; an explicit zero is valid. Missing macros remain
+undefined. Confirmation feedback is emitted only after local storage succeeds.

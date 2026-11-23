@@ -6,6 +6,7 @@ import { useApp } from "@/context/AppContext";
 import { shareOrDownloadFile } from "@/lib/fileExport";
 import { dateKey, parseStoredData, safeNumber } from "@/lib/utils";
 import type { AppData, Colorway } from "@/types";
+import { SaveFeedback } from "./SaveFeedback";
 import { ActivityTab } from "./ActivityTab";
 import { DashboardTab } from "./DashboardTab";
 import { FoodTab } from "./FoodTab";
@@ -17,7 +18,7 @@ interface BeforeInstallPromptEvent extends Event { prompt: () => Promise<void>; 
 
 const NAV_ITEMS = [
   { id: "dashboard" as const, label: "Dashboard", icon: LayoutDashboard },
-  { id: "food" as const, label: "Food + Calendar", mobileLabel: "Food", icon: Utensils },
+  { id: "food" as const, label: "Food diary", mobileLabel: "Food", icon: Utensils },
   { id: "activity" as const, label: "Activity", icon: Activity },
   { id: "water" as const, label: "Water", icon: Droplets },
 ];
@@ -133,7 +134,7 @@ export function AppShell() {
 
         <div className="mx-auto max-w-[1380px] px-4 pt-5 lg:px-8 lg:pt-0">
           <div className="mb-5 lg:hidden"><p className="muted text-[10px] font-extrabold uppercase tracking-[.18em]">{heading.eyebrow}</p><h1 className="heading mt-0.5 text-2xl">{heading.title}</h1><p className="muted mt-1 text-xs">{heading.description}</p></div>
-          <div className="mb-5 hidden items-center justify-end gap-2 xl:flex"><button type="button" className="secondary-button" onClick={() => goToAction("food")}><Utensils size={16}/> Add food</button><button type="button" className="secondary-button" onClick={() => goToAction("activity")}><Flame size={16}/> Add activity</button><button type="button" className="primary-button" onClick={() => goToAction("water")}><Droplets size={16}/> Add water</button></div>
+          <div className="mb-5 hidden items-center justify-end gap-2 xl:flex"><button type="button" className="primary-button" onClick={() => goToAction("food")}><Utensils size={16}/> Add food</button><button type="button" className="secondary-button" onClick={() => goToAction("activity")}><Flame size={16}/> Add activity</button><button type="button" className="secondary-button" onClick={() => goToAction("water")}><Droplets size={16}/> Add water</button></div>
           {tab === "dashboard" && <DashboardTab date={selectedDate} onAddFood={() => goToAction("food")} onAddActivity={() => goToAction("activity")} onAddWater={() => goToAction("water")}/>} 
           {tab === "food" && <FoodTab key={`food-${foodAction ? "quick" : "nav"}`} date={selectedDate} startInLibrary={foodAction}/>} 
           {tab === "activity" && <ActivityTab date={selectedDate} requestedAction={activityAction} onActionHandled={() => setActivityAction(false)}/>} 
@@ -145,9 +146,9 @@ export function AppShell() {
       <input ref={backupInputRef} className="hidden" type="file" accept="application/json,.json" onChange={(event) => readBackup(event.target.files?.[0])}/>
 
       {quickOpen && <><button type="button" className="quick-add-backdrop fixed inset-0 z-[60] cursor-default bg-ink/15 lg:hidden" onClick={() => setQuickOpen(false)} aria-label="Close quick add menu"/><div className="quick-add-menu popup-surface fixed bottom-[calc(5.75rem+env(safe-area-inset-bottom))] left-4 right-4 z-[65] mx-auto max-h-[60dvh] max-w-sm overflow-y-auto overflow-x-hidden rounded-[1.75rem] p-3 lg:hidden"><div className="mb-2 flex items-start justify-between gap-3 px-2 pt-1"><div className="min-w-0"><p className="muted text-[10px] font-extrabold uppercase tracking-[.16em]">Quick add</p><p className="heading break-words text-lg">What would you like to log?</p></div><button type="button" className="icon-button !size-9 shrink-0 border-0 bg-violet-500/7" onClick={() => setQuickOpen(false)} aria-label="Close quick add menu"><X size={17}/></button></div><QuickAddItem icon={<Utensils/>} title="Food" description="Choose a saved food" tone="bg-orange-500/10 text-orange-500" onClick={() => goToAction("food")}/><QuickAddItem icon={<Flame/>} title="Activity" description="Record calories or a workout" tone="bg-violet-500/10 text-violet-500" onClick={() => goToAction("activity")}/><QuickAddItem icon={<Droplets/>} title="Water" description="Use a quick size or custom amount" tone="bg-sky-500/10 text-sky-500" onClick={() => goToAction("water")}/></div></>}
-      {!quickOpen && <button type="button" className="quick-add-trigger group fixed bottom-[calc(5.35rem+env(safe-area-inset-bottom))] right-4 z-[65] flex h-[3.25rem] min-w-[9.25rem] items-center gap-2 rounded-[1.35rem] px-1.5 pr-3 text-sm font-extrabold transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 active:scale-[.97] lg:hidden" onClick={() => setQuickOpen(true)} aria-label="Open quick add menu" aria-expanded="false">
+      {!quickOpen && <button type="button" className="quick-add-trigger group fixed bottom-[calc(5.35rem+env(safe-area-inset-bottom))] right-4 z-[65] flex h-[3.25rem] min-w-[9.25rem] items-center gap-2 rounded-[1.35rem] px-1.5 pr-3 text-sm font-extrabold transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 active:scale-[.97] lg:hidden" onClick={() => tab === "dashboard" ? goToAction("food") : setQuickOpen(true)} aria-label={tab === "dashboard" ? "Log food" : "Open quick add menu"} aria-expanded="false">
         <span className="quick-add-icon relative z-10 grid size-10 shrink-0 place-items-center rounded-[1rem] text-white shadow-sm" style={{ background: "radial-gradient(circle at 82% 12%, rgb(255 255 255 / .28), transparent 36%), linear-gradient(145deg, rgb(var(--accent-soft)), rgb(var(--accent-deep)))" }}><Plus className="transition-transform duration-300 group-hover:rotate-90" size={19}/></span>
-        <span className="relative z-10 whitespace-nowrap">Quick add</span>
+        <span className="relative z-10 whitespace-nowrap">{tab === "dashboard" ? "Log food" : "Quick add"}</span>
         <Sparkles className="quick-add-sparkle relative z-10 ml-auto shrink-0 text-violet-500" size={15} strokeWidth={2.4}/>
       </button>}
       <nav className="safe-bottom fixed inset-x-0 bottom-0 z-50 grid grid-cols-4 border-t px-2 pt-2 lg:hidden" style={{ background: "rgb(var(--card) / .96)", borderColor: "rgb(var(--line))", backdropFilter: "blur(18px)" }} aria-label="Mobile navigation">{NAV_ITEMS.map(({ id, label, mobileLabel, icon: Icon }) => <button type="button" key={id} className={`flex min-h-12 flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-bold transition ${tab === id ? "text-violet-500" : "muted"}`} onClick={() => navigateToTab(id)}><Icon size={20} strokeWidth={tab === id ? 2.6 : 2}/><span>{mobileLabel || label}</span></button>)}</nav>
@@ -155,7 +156,7 @@ export function AppShell() {
       <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} calorieGoal={data.profile.calorieGoal} waterGoal={data.profile.waterGoalOz} onSave={(calorieGoal, waterGoal) => { updateGoals(calorieGoal, waterGoal); notify("Daily goals updated."); setSettingsOpen(false); }}/>
       <ConfirmDialog open={pendingImport !== null} title="Import this complete backup?" description="This replaces all food, activity, water, weight, goals, and settings currently stored on this device." confirmLabel="Import and replace" tone="primary" onClose={() => setPendingImport(null)} onConfirm={() => { if (pendingImport) { replaceData(pendingImport); notify("Backup imported. All data is now available on this device."); } setPendingImport(null); scrollToTop(); }}/>
       <Modal open={installOpen} onClose={() => setInstallOpen(false)} title="Install Tom’s CookBook" description="Keep it one tap away and use your previously loaded tracker offline." width="max-w-sm" footer={<button type="button" className="primary-button w-full" onClick={() => setInstallOpen(false)}>Got it</button>}><div className="space-y-3 text-sm"><InstallStep number="1" text="On iPhone, tap the Share button in Safari."/><InstallStep number="2" text="Choose “Add to Home Screen.”"/><InstallStep number="3" text="Tap Add to install the app icon."/><div className="mt-4 rounded-2xl bg-violet-500/8 p-3 text-xs muted">On desktop, use the install icon in the browser address bar if this browser does not show an automatic prompt.</div></div></Modal>
-      <Toast toast={toast}/>
+      <Toast toast={toast}/><SaveFeedback />
     </div>
   );
 }
