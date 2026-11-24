@@ -2,6 +2,7 @@
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { Check } from "lucide-react";
+import { useNotificationPresence } from "./useNotificationPresence";
 import { useApp } from "@/context/AppContext";
 
 export function SaveFeedback() {
@@ -12,9 +13,10 @@ export function SaveFeedback() {
     const change = () => setReduced(media.matches); change();
     media.addEventListener("change", change); return () => media.removeEventListener("change", change);
   }, []);
-  if (!confirmation) return null;
-  return <div key={confirmation.id} className="save-feedback" role="status">
-    {reduced ? <Check size={28} /> : <Image unoptimized src={`${confirmation.kind === "food" ? "/assets/confirm.svg" : "/assets/water.gif"}?event=${encodeURIComponent(confirmation.id)}`} width={72} height={72} alt="" />}
-    <div><strong>{confirmation.kind === "food" ? "Meal logged" : `+${confirmation.amount} oz`}</strong><p className="muted text-sm">{confirmation.kind === "food" ? "Added to your diary" : "Water saved"}</p></div>
+  const { item, exiting } = useNotificationPresence(confirmation);
+  if (!item) return null;
+  return <div key={item.id} className={`save-feedback notification-motion ${exiting ? "is-exiting" : ""}`} role="status">
+    {reduced ? <Check size={20} className="shrink-0 text-emerald-500" /> : item.kind === "food" ? <Image unoptimized src={`/assets/confirm.svg?event=${encodeURIComponent(item.id)}`} width={48} height={48} alt="" className="confirmation-art" /> : <video src="/assets/water.webm" autoPlay muted playsInline loop preload="auto" aria-hidden="true" />}
+    <strong>{item.kind === "food" ? "Food logged" : `+${item.amount} oz logged`}</strong>
   </div>;
 }

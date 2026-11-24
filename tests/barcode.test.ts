@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { normalizeProduct, portionFactor, productToFood } from "../src/lib/barcode";
+import { normalizeProduct, packageAmountForUnit, portionFactor, productToFood } from "../src/lib/barcode";
 import { GET } from "../src/app/api/barcode/route";
 import { foodToLog, getDailyTotals, parseStoredData } from "../src/lib/utils";
 import { createInitialData } from "../src/lib/seed";
@@ -54,5 +54,54 @@ describe("barcode lookup and diary integration", () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("offline")));
     expect((await GET(new Request("http://localhost/api/barcode?code=00000000"))).status).toBe(502);
     expect((await GET(new Request("http://localhost/api/barcode?code=12e34567"))).status).toBe(400);
+  });
+});
+
+ describe("package pricing", () => {
+  it("scales package price to gram portions and keeps historical costs", () => {
+    const product = normalizeProduct({ serving_size: "40 g", nutriments: { "energy-kcal_100g": 400 } }, "12345678");
+    const food = productToFood(product, "oats", { price: 6, amount: 500, unit: "grams" });
+    expect(food.packageQuantity).toBe(5);
+    const entry = foodToLog(food, "2026-11-23", portionFactor(product, 60, "grams"));
+    expect(entry.costPerServing! * entry.servings).toBeCloseTo(.72);
+    food.price = 10;
+    expect(entry.costPerServing! * entry.servings).toBeCloseTo(.72);
+    expect(JSON.parse(JSON.stringify(entry)).costPerServing).toBe(1.2);
+  });
+  it("supports servings, volume, free packages, and rejects invalid purchases", () => {
+    const product = normalizeProduct({ nutriments: { "energy-kcal_serving": 120 } }, "12345678");
+    expect(productToFood(product, "food", { price: 8, amount: 4, unit: "serving" })).toMatchObject({ price: 8, packageQuantity: 4 });
+    const liquid = normalizeProduct({ nutrition_data_per: "100ml", nutriments: { "energy-kcal_100g": 40 } }, "12345678");
+    const food = productToFood(liquid, "drink", { price: 4, amount: 1000, unit: "ml" });
+    const entry = foodToLog(food, "2026-11-23", portionFactor(liquid, 250, "ml"));
+    expect(entry.costPerServing! * entry.servings).toBe(1);
+    expect(productToFood(product, "free", { price: 0, amount: 4, unit: "serving" }).price).toBe(0);
+    for (const price of [-1, Infinity, NaN]) expect(() => productToFood(product, "bad", { price, amount: 4, unit: "serving" })).toThrow();
+    expect(() => productToFood(product, "bad", { price: 4, amount: 0, unit: "serving" })).toThrow();
+  });
+});
+
+describe("automatic package amounts", () => {
+  it("calculates servings from matching package and serving weights", () => {
+    const p = normalizeProduct({ product_quantity: 500, product_quantity_unit: "g", serving_size: "40 g", nutriments: { "energy-kcal_serving": 160 } }, "12345678");
+    expect(p.packageServings).toBe(12.5);
+    expect(packageAmountForUnit(p, "grams")).toBe(500);
+    expect(packageAmountForUnit(p, "serving")).toBe(12.5);
+    expect(productToFood(p, "oats").packageQuantity).toBe(12.5);
+  });
+  it("uses explicit normalized serving units for liquid portions and costs", () => {
+    const p = normalizeProduct({ product_quantity: 1000, product_quantity_unit: "ml", serving_quantity: 250, serving_quantity_unit: "ml", serving_size: "1 cup", nutriments: { "energy-kcal_serving": 100 } }, "12345678");
+    expect(p.packageServings).toBe(4);
+    expect(portionFactor(p, 125, "ml")).toBe(.5);
+    expect(productToFood(p, "drink", { price: 8, amount: p.packageServings!, unit: "serving" }).packageQuantity).toBe(4);
+    const per100 = normalizeProduct({ product_quantity: 1000, product_quantity_unit: "ml", serving_size: "250 ml", nutriments: { "energy-kcal_100g": 40 } }, "12345678");
+    expect(portionFactor(per100, 1, "serving")).toBe(2.5);
+    expect(productToFood(per100, "drink").packageQuantity).toBe(10);
+  });
+  it("leaves missing or incompatible amounts for manual entry", () => {
+    for (const raw of [ {}, { product_quantity: 500 }, { product_quantity: 500, product_quantity_unit: "ml", serving_size: "40 g" }, { product_quantity: 0, product_quantity_unit: "g", serving_size: "40 g" } ]) {
+      const p = normalizeProduct(raw, "12345678");
+      expect(packageAmountForUnit(p, "serving")).toBeUndefined();
+    }
   });
 });

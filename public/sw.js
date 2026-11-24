@@ -1,5 +1,5 @@
-const CACHE_NAME = "toms-cookbook-v4";
-const APP_SHELL = ["/", "/manifest.webmanifest", "/icon", "/apple-icon", "/pwa-icon-192", "/pwa-icon-512", "/icons/tc-64.png", "/icons/tc-192.png", "/icons/tc-512.png", "/assets/confirm.svg", "/assets/scanner.svg", "/assets/water.gif"];
+const CACHE_NAME = "toms-cookbook-v13";
+const APP_SHELL = ["/", "/manifest.webmanifest", "/icon", "/apple-icon", "/pwa-icon-192", "/pwa-icon-512", "/icons/fire-64.png", "/icons/fire-192.png", "/icons/fire-512.png", "/assets/logo.png", "/assets/confirm.svg", "/assets/scanner.svg", "/assets/water.webm"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));

@@ -92,6 +92,7 @@ export function foodToLog(food: SavedFood, date: string, servings: number): Food
   return {
     id: makeId("foodlog"),
     foodId: food.id,
+    costPerServing: costPerServing(food),
     image: food.image, imageLarge: food.imageLarge, barcode: food.barcode, brand: food.brand,
     servingGrams: food.servingGrams, nutritionBasis: food.nutritionBasis,
     date,
@@ -133,4 +134,13 @@ export function saveAppData(storage: StorageAdapter, data: AppData) {
 
 export function formatCalories(value: number) {
   return Math.round(value).toLocaleString();
+}
+
+export function clearDay(data: AppData, date: string): AppData {
+  return { ...data,
+    foodLog: data.foodLog.filter(entry => entry.date !== date),
+    activityLog: data.activityLog.filter(entry => entry.date !== date),
+    waterLog: data.waterLog.filter(entry => entry.date !== date),
+    weightLog: data.weightLog.filter(entry => entry.date !== date),
+  };
 }

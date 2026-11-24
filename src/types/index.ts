@@ -33,6 +33,7 @@ export interface SavedFood extends Nutrition, ProductMetadata {
 }
 
 export interface FoodLogEntry extends Nutrition, ProductMetadata {
+  costPerServing?: number;
   id: string;
   foodId?: string;
   date: string;
@@ -82,13 +83,22 @@ export interface WeightEntry {
 export interface AppProfile {
   localUserId: string;
   displayName: string;
+  nameConfirmed?: boolean;
   calorieGoal: number;
   waterGoalOz: number;
   theme: ThemeMode;
   colorway: Colorway;
 }
 
+export interface DailyReminder {
+  recurrence?: "daily" | "once";
+  id: string;
+  label: string;
+  completedDates: string[];
+}
+
 export interface AppData {
+  reminders?: DailyReminder[];
   version: 1;
   profile: AppProfile;
   savedFoods: SavedFood[];

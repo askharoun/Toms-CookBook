@@ -6,7 +6,7 @@ export function createInitialData(): AppData {
     version: 1,
     profile: {
       localUserId: `local_${Math.random().toString(36).slice(2)}`,
-      displayName: "Tom",
+      displayName: "",
       calorieGoal: 2200,
       waterGoalOz: 96,
       theme: "dark",

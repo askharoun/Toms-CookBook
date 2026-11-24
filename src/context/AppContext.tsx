@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type {
+  DailyReminder,
   ActivityEntry,
   AppData,
   Colorway,
@@ -14,10 +15,17 @@ import type {
   WeightEntry,
 } from "@/types";
 import { createInitialData } from "@/lib/seed";
-import { loadAppData, saveAppData } from "@/lib/utils";
+import { clearDay, LEGACY_STORAGE_KEYS, loadAppData, saveAppData } from "@/lib/utils";
 
 type Confirmation = { id: string; kind: "food" | "water"; amount?: number } | null;
 interface AppContextValue {
+  resetApp: () => boolean;
+  setDisplayName: (name: string) => void;
+  resetDay: (date: string) => void;
+  addReminder: (reminder: DailyReminder) => void;
+  deleteReminder: (id: string) => void;
+  setReminderRecurrence: (id: string, recurrence: "daily" | "once") => void;
+  completeReminder: (id: string, date: string, completed: boolean) => void;
   confirmation: Confirmation;
   data: AppData;
   hydrated: boolean;
@@ -106,6 +114,23 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [confirmation]);
 
   const value = useMemo<AppContextValue>(() => ({
+    setDisplayName: (name) => setData(current => ({ ...current, profile: { ...current.profile, displayName: name.trim().slice(0, 40), nameConfirmed: Boolean(name.trim()) } })),
+    resetApp: () => {
+      const fresh = createInitialData();
+      try {
+        saveAppData(localStorage, fresh);
+        for (const key of LEGACY_STORAGE_KEYS) localStorage.removeItem(key);
+        // Keep the one-time demo consumed; a reset should leave no pending reminders.
+        localStorage.setItem("toms-cookbook:reminder-preview:2026-11-23-v1", "shown");
+      } catch { notify("Could not reset local storage. Please try again.", "error"); return false; }
+      pendingConfirmation.current = null; setConfirmation(null); clearTimeout(toastTimer.current); setToast(null); setData(fresh);
+      return true;
+    },
+    resetDay: (date) => { pendingConfirmation.current = null; setConfirmation(null); setData(current => clearDay(current, date)); },
+    addReminder: (reminder) => setData(current => ({ ...current, reminders: [...(current.reminders || []), reminder] })),
+    deleteReminder: (id) => setData(current => ({ ...current, reminders: (current.reminders || []).filter(item => item.id !== id) })),
+    setReminderRecurrence: (id, recurrence) => setData(current => ({ ...current, reminders: (current.reminders || []).map(item => item.id === id ? { ...item, recurrence } : item) })),
+    completeReminder: (id, date, completed) => setData(current => ({ ...current, reminders: (current.reminders || []).map(item => item.id === id ? { ...item, completedDates: completed ? [...new Set([...item.completedDates, date])] : item.recurrence === "once" ? [] : item.completedDates.filter(day => day !== date) } : item) })),
     data,
     confirmation,
     hydrated,

@@ -1,5 +1,6 @@
 "use client";
 
+import { CustomSelect } from "./CustomSelect";
 import { FoodPhoto } from "./FoodPhoto";
 import { BarcodeFlow } from "./BarcodeFlow";
 import { useMemo, useRef, useState } from "react";
@@ -78,16 +79,16 @@ export function FoodTab({ date, startInLibrary = false }: { date: string; startI
 
   return (
     <div className="space-y-5 animate-rise">
-      <div className="flex flex-wrap gap-2"><button className="primary-button" onClick={() => setScanner("camera")}><ScanBarcode size={18}/> Scan barcode</button><button className="secondary-button" onClick={() => setScanner("type")}>Type barcode</button><button className="secondary-button" onClick={() => setFoodEditor("new")}>Manual entry</button></div>
+      <div className="grid grid-cols-2 gap-2 sm:flex"><button className="primary-button" onClick={() => setScanner("camera")}><ScanBarcode size={18}/> Scan barcode</button><button className="secondary-button" onClick={() => setScanner("type")}>Type barcode</button></div>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex rounded-xl bg-violet-500/7 p-1">
           <button type="button" className={`rounded-lg px-4 py-2.5 text-sm font-bold transition ${view === "log" ? "bg-violet-500 text-white shadow" : "muted"}`} onClick={() => setView("log")}>Daily log <span className="ml-1 opacity-70">{log.length}</span></button>
           <button type="button" className={`rounded-lg px-4 py-2.5 text-sm font-bold transition ${view === "library" ? "bg-violet-500 text-white shadow" : "muted"}`} onClick={() => setView("library")}>Saved foods</button>
         </div>
-        <div className="flex gap-2">
+        <div className="food-library-tools flex flex-wrap gap-2">
           <input ref={foodImportRef} className="hidden" type="file" accept="application/json,.json" onChange={(event) => importFoods(event.target.files?.[0])}/>
-          <button type="button" className="secondary-button" onClick={() => foodImportRef.current?.click()} title="Import saved foods from JSON"><Upload size={17}/> <span className="hidden sm:inline">Import</span></button>
-          <button type="button" className="secondary-button" onClick={shareFoods} title="Export saved foods as JSON"><FileJson size={17}/> <span className="hidden sm:inline">Export</span></button>
+          <button type="button" className="secondary-button" onClick={() => foodImportRef.current?.click()} title="Import saved foods from JSON"><Upload size={17}/> <span>Import</span></button>
+          <button type="button" className="secondary-button" onClick={shareFoods} title="Export saved foods as JSON"><FileJson size={17}/> <span>Export</span></button>
           <button type="button" className="primary-button" onClick={() => setFoodEditor("new")}><Plus size={17}/> New food</button>
         </div>
       </div>
@@ -95,14 +96,14 @@ export function FoodTab({ date, startInLibrary = false }: { date: string; startI
       {view === "log" ? (
         <section className="card">
           <div className="mb-5 flex items-start justify-between gap-4">
-            <div><p className="muted text-xs font-bold uppercase tracking-[.15em]">Food diary</p><h2 className="heading mt-1 text-xl">{formatCalories(log.reduce((sum, entry) => sum + caloriesForEntry(entry), 0))} calories</h2></div>
+            <div><p className="muted text-xs font-bold uppercase tracking-[.15em]">Food diary</p><h2 className="heading mt-1 text-xl">{formatCalories(log.reduce((sum, entry) => sum + caloriesForEntry(entry), 0))} calories</h2><p className="muted mt-1 text-sm">${log.reduce((sum, entry) => sum + (entry.costPerServing ?? 0) * entry.servings, 0).toFixed(2)} recorded food cost</p></div>
             <button type="button" className="primary-button" onClick={() => setView("library")}><Plus size={17}/> Add food</button>
           </div>
           {log.length ? <><div className="space-y-2">{(showAllLog ? log : log.slice(0, 5)).map((entry) => (
-            <div key={entry.id} className={`subtle-card flex items-center gap-3 p-3.5 ${confirmation?.id === entry.id ? "just-logged" : ""}`}>
+            <div key={entry.id} className={`diary-row subtle-card ${confirmation?.id === entry.id ? "just-logged" : ""}`}>
               <FoodPhoto image={entry.image} imageLarge={entry.imageLarge} name={entry.name} />
               <div className="min-w-0 flex-1"><p className="truncate text-sm font-bold">{entry.name}</p><p className="muted truncate text-xs">{entry.servings} × {entry.servingDescription}</p></div>
-              <p className="heading shrink-0 text-sm">{formatCalories(caloriesForEntry(entry))}</p>
+              <p className="diary-total heading shrink-0 text-sm">{formatCalories(caloriesForEntry(entry))}{entry.costPerServing !== undefined && <span className="muted block text-xs">${(entry.costPerServing * entry.servings).toFixed(2)}</span>}</p>
               <button type="button" className="icon-button !size-9" onClick={() => setEditLog(entry)} aria-label={`Edit ${entry.name} log`}><Pencil size={15}/></button>
               <button type="button" className="icon-button !size-9 text-rose-500" onClick={() => setDeleteTarget({ kind: "log", id: entry.id, name: entry.name })} aria-label={`Delete ${entry.name} log`}><Trash2 size={15}/></button>
             </div>
@@ -208,18 +209,18 @@ function FoodEditor({ open, food, onClose, onSave }: { open: boolean; food: Save
     <Modal open={open} onClose={onClose} title={food ? "Edit saved food" : "Create saved food"} description="Save it once, then log it on any day in a few taps." width="max-w-2xl" footer={<div className="flex gap-3"><button type="button" className="secondary-button flex-1" onClick={onClose}>Cancel</button><button type="submit" form="food-editor-form" className="primary-button flex-1">Save food</button></div>}>
       <form id="food-editor-form" onSubmit={submit} className="min-w-0 space-y-5">
         <div className="grid gap-4 sm:grid-cols-2">
-          <label><span className="label">Food name *</span><input className="input" name="name" required defaultValue={food?.name} placeholder="Large eggs" autoFocus/></label>
+          <label><span className="label">Food name *</span><input className="input" name="name" required defaultValue={food?.name} placeholder="Large eggs"/></label>
           <label><span className="label">Serving description *</span><input className="input" name="servingDescription" required defaultValue={food?.servingDescription} placeholder="1 egg"/></label>
-          <label><span className="label">Calories per serving *</span><input className="input" name="calories" type="number" min="0" step="any" required value={calorieInput} onChange={(event) => setCalorieInput(event.target.value)} placeholder="80"/></label>
-          <label><span className="label">Servings in package *</span><input className="input" name="quantity" type="number" min="0.01" step="0.01" required value={quantity || ""} onChange={(event) => setQuantity(Number(event.target.value))} placeholder="36"/></label>
-          <label><span className="label">Package price ($) *</span><input className="input" name="price" type="number" min="0" step="0.01" required value={price} onChange={(event) => setPrice(Number(event.target.value))} placeholder="4.94"/></label>
+          <label><span className="label">Calories per serving *</span><input className="input" name="calories" type="number" inputMode="decimal" min="0" step="any" required value={calorieInput} onChange={(event) => setCalorieInput(event.target.value)} placeholder="80"/></label>
+          <label><span className="label">Servings in package *</span><input className="input" name="quantity" type="number" inputMode="decimal" min="0.01" step="0.01" required value={quantity || ""} onChange={(event) => setQuantity(Number(event.target.value))} placeholder="36"/></label>
+          <label><span className="label">Package price ($) *</span><input className="input" name="price" type="number" inputMode="decimal" min="0" step="0.01" required value={price} onChange={(event) => setPrice(Number(event.target.value))} placeholder="4.94"/></label>
           <label><span className="label">Purchase link</span><input className="input" name="purchaseLink" type="url" defaultValue={food?.purchaseLink} placeholder="https://…"/></label>
         </div>
         <div>
           <span className="label">Product image</span>
           <div className="flex gap-3"><label className="min-w-0 flex-1"><span className="sr-only">Image URL</span><input className="input" value={image.startsWith("data:") ? "Uploaded image" : image} onChange={(event) => setImage(event.target.value)} placeholder="Paste an image URL" disabled={image.startsWith("data:")}/></label><input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(event) => handleFile(event.target.files?.[0])}/><button type="button" className="secondary-button shrink-0" onClick={() => fileRef.current?.click()}><Upload size={17}/> Upload</button>{image && <button type="button" className="icon-button shrink-0" onClick={() => setImage("")} aria-label="Remove image"><X size={17}/></button>}</div>
         </div>
-        <div className="rounded-2xl bg-violet-500/7 p-4"><p className="mb-3 text-xs font-bold text-violet-600 dark:text-violet-300">Optional nutrition per serving</p><div className="grid grid-cols-3 gap-3"><label><span className="label">Protein (g)</span><input className="input" name="protein" type="number" min="0" step="0.1" defaultValue={food?.protein}/></label><label><span className="label">Carbs (g)</span><input className="input" name="carbs" type="number" min="0" step="0.1" defaultValue={food?.carbs}/></label><label><span className="label">Fat (g)</span><input className="input" name="fat" type="number" min="0" step="0.1" defaultValue={food?.fat}/></label></div></div>
+        <details className="rounded-2xl bg-violet-500/7 p-4"><summary className="cursor-pointer text-sm font-semibold">Optional nutrition</summary><div className="mt-4"><div className="grid grid-cols-3 gap-3"><label><span className="label">Protein (g)</span><input className="input" name="protein" type="number" inputMode="decimal" min="0" step="0.1" defaultValue={food?.protein}/></label><label><span className="label">Carbs (g)</span><input className="input" name="carbs" type="number" inputMode="decimal" min="0" step="0.1" defaultValue={food?.carbs}/></label><label><span className="label">Fat (g)</span><input className="input" name="fat" type="number" inputMode="decimal" min="0" step="0.1" defaultValue={food?.fat}/></label></div></div></details>
         <label><span className="label">Notes</span><textarea className="input min-h-20 resize-y" name="notes" defaultValue={food?.notes} placeholder="Brand, flavor, preparation…"/></label>
         <div className="grid grid-cols-2 gap-3 rounded-2xl border p-4" style={{ borderColor: "rgb(var(--line))" }}><div><span className="muted text-xs">Total package calories</span><p className="heading text-xl">{formatCalories(calories * quantity)}</p></div><div><span className="muted text-xs">Cost per serving</span><p className="heading text-xl">${quantity ? (price / quantity).toFixed(2) : "0.00"}</p></div></div>
       </form>
@@ -234,10 +235,10 @@ export function LogFoodModal({ food, date, onClose, onSave }: { food: SavedFood 
   const [unit, setUnit] = useState("servings");
   const servings = unit === "grams" && food?.servingGrams ? amount / food.servingGrams : amount;
   const valid = Number.isFinite(servings) && servings > 0;
-  return <Modal open={food !== null} onClose={onClose} title={`Log ${food?.name || "food"}`} description={food?.servingDescription} width="max-w-sm" footer={<button type="submit" form="log-food-form" className="primary-button w-full" disabled={!valid}><Plus size={17}/> Add to log</button>}>
+  return <Modal open={food !== null} onClose={onClose} title={`Log ${food?.name || "food"}`} descriptionIsHelp={false} description={food?.servingDescription} width="max-w-sm" footer={<button type="submit" form="log-food-form" className="primary-button w-full" disabled={!valid}><Plus size={17}/> Add to log</button>}>
     <form id="log-food-form" onSubmit={(event) => { event.preventDefault(); if (valid) onSave(servings); }} className="space-y-4">
-      <label><span className="label">Amount eaten</span><input className="input text-lg" type="number" min="0.01" step="any" value={amount || ""} onChange={(event) => setAmount(Number(event.target.value))} required autoFocus/></label>
-      <label><span className="label">Unit</span><select className="input" value={unit} onChange={(event) => { setUnit(event.target.value); setAmount(event.target.value === "grams" ? food?.servingGrams || 1 : 1); }}><option value="servings">Servings ({food?.servingDescription})</option>{food?.servingGrams && <option value="grams">Grams</option>}</select></label>
+      <label><span className="label">Amount eaten</span><input className="input text-lg" type="number" inputMode="decimal" min="0.01" step="any" value={amount || ""} onChange={(event) => setAmount(Number(event.target.value))} required/></label>
+      <div><span className="label">Unit</span><CustomSelect label="Portion unit" value={unit} onChange={value => { setUnit(value); setAmount(value === "grams" ? food?.servingGrams || 1 : 1); }} options={[{ value: "servings", label: `Servings (${food?.servingDescription || "1 serving"})` }, ...(food?.servingGrams ? [{ value: "grams", label: "Grams" }] : [])]} /></div>
       <div className="rounded-2xl bg-violet-500/7 p-4 text-center"><span className="muted text-xs">Adds to {date}</span><p className="heading mt-1 break-words text-2xl">{formatCalories((food?.caloriesPerServing || 0) * (valid ? servings : 0))} calories</p></div>
     </form>
   </Modal>;
@@ -245,5 +246,5 @@ export function LogFoodModal({ food, date, onClose, onSave }: { food: SavedFood 
 
 function EditLogModal({ entry, onClose, onSave }: { entry: FoodLogEntry | null; onClose: () => void; onSave: (entry: FoodLogEntry) => void }) {
   const [servings, setServings] = useState(entry?.servings || 1);
-  return <Modal open={entry !== null} onClose={onClose} title={`Edit ${entry?.name || "entry"}`} width="max-w-sm" footer={<button type="submit" form="edit-log-form" className="primary-button w-full">Update entry</button>}><form id="edit-log-form" onSubmit={(event) => { event.preventDefault(); if (entry && servings > 0) onSave({ ...entry, servings }); }} className="space-y-4"><label><span className="label">Servings</span><input className="input" type="number" min="0.01" max="100" step="0.01" value={servings} onChange={(event) => setServings(Number(event.target.value))} required autoFocus/></label><p className="heading break-words rounded-2xl bg-violet-500/7 p-4 text-center text-xl">{formatCalories((entry?.caloriesPerServing || 0) * servings)} calories</p></form></Modal>;
+  return <Modal open={entry !== null} onClose={onClose} title={`Edit ${entry?.name || "entry"}`} width="max-w-sm" footer={<button type="submit" form="edit-log-form" className="primary-button w-full">Update entry</button>}><form id="edit-log-form" onSubmit={(event) => { event.preventDefault(); if (entry && servings > 0) onSave({ ...entry, servings }); }} className="space-y-4"><label><span className="label">Servings</span><input className="input" type="number" inputMode="decimal" min="0.01" max="100" step="0.01" value={servings} onChange={(event) => setServings(Number(event.target.value))} required/></label><p className="heading break-words rounded-2xl bg-violet-500/7 p-4 text-center text-xl">{formatCalories((entry?.caloriesPerServing || 0) * servings)} calories</p></form></Modal>;
 }

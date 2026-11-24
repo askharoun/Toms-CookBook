@@ -18,7 +18,7 @@ const tooltipStyle = {
   boxShadow: "0 10px 30px rgba(0,0,0,.12)",
 };
 
-export function DashboardTab({ date, onAddFood, onAddActivity, onAddWater }: { date: string; onAddFood: () => void; onAddActivity: () => void; onAddWater: () => void }) {
+export function DashboardTab({ date, onAddFood, onAddWater }: { date: string; onAddFood: () => void; onAddWater: () => void }) {
   const { data, addWeight, notify } = useApp();
   const [range, setRange] = useState<1 | 7 | 30>(7);
   const [weightTiming, setWeightTiming] = useState<WeightTiming | null>(null);
@@ -59,7 +59,7 @@ export function DashboardTab({ date, onAddFood, onAddActivity, onAddWater }: { d
               <div className="mb-5 text-center sm:text-left">
                 <p className="muted text-xs font-bold uppercase tracking-[.15em]">Daily energy</p>
                 <h2 className="heading mt-1 break-words text-2xl">You’re building momentum</h2>
-                <p className="muted mt-1 text-sm">{formatCalories(Math.abs(totals.remaining))} cal {totals.remaining < 0 ? "over" : "remaining"} ? {formatCalories(data.profile.calorieGoal)} goal</p>
+                <p className="muted mt-1 text-sm">{formatCalories(Math.abs(totals.remaining))} cal {totals.remaining < 0 ? "over" : "remaining"} / {formatCalories(data.profile.calorieGoal)} goal</p>
               </div>
               <div className="grid grid-cols-3 gap-2">
                 <MiniMetric icon={<Utensils size={16} />} label="Eaten" value={totals.eaten} color="text-orange-500" />
@@ -68,7 +68,7 @@ export function DashboardTab({ date, onAddFood, onAddActivity, onAddWater }: { d
               </div>
             </div>
           </div>
-          <div className="relative mt-5 rounded-2xl bg-violet-500/7 px-4 py-3 text-xs leading-relaxed text-violet-800 dark:text-violet-200">
+          <div className="help-copy relative mt-5 rounded-2xl bg-violet-500/7 px-4 py-3 text-xs leading-relaxed text-violet-800 dark:text-violet-200">
             <strong>How this works:</strong> {formatCalories(totals.eaten)} eaten − {formatCalories(totals.burned)} active calories = {formatCalories(totals.net)} net. Resting metabolism is intentionally not included in active calories burned.
           </div>
         </div>
@@ -90,7 +90,7 @@ export function DashboardTab({ date, onAddFood, onAddActivity, onAddWater }: { d
           <div className="mt-6 flex items-end justify-between"><p className="heading text-4xl">{totals.water}<span className="ml-1 text-base text-sky-500">oz</span></p><span className="muted text-sm">of {data.profile.waterGoalOz} oz</span></div>
           <div className="mt-4 h-3 overflow-hidden rounded-full bg-sky-500/10"><div className="h-full rounded-full bg-gradient-to-r from-sky-400 to-violet-500 transition-all" style={{ width: `${Math.min(waterProgress, 100)}%` }} /></div>
           <p className="muted mt-2 text-xs">{Math.round(waterProgress)}% of your daily goal</p>
-          <button type="button" className="secondary-button mt-auto w-full border-sky-500/20 text-sky-600 dark:text-sky-400" onClick={onAddWater}><Plus size={17} /> Add water</button>
+          <button type="button" className="secondary-button mt-5 w-full border-sky-500/20 text-sky-600 dark:text-sky-400" onClick={onAddWater}><Plus size={17} /> Add water</button>
         </div>
 
       <section className="card">
@@ -127,15 +127,7 @@ export function DashboardTab({ date, onAddFood, onAddActivity, onAddWater }: { d
         </div>
       </section>
 
-      <section className="grid w-full min-w-0 gap-4 md:grid-cols-[1.1fr_.9fr]">
-        <div className="card">
-          <div className="mb-4 flex items-center justify-between"><div><p className="muted text-xs font-bold uppercase tracking-[.15em]">Quick actions</p><h2 className="heading mt-1 text-xl">Log in a tap</h2></div><Plus className="text-violet-500" /></div>
-          <div className="grid grid-cols-3 gap-2">
-            <QuickAction icon={<Utensils />} label="Food" className="bg-orange-500/10 text-orange-600 dark:text-orange-400" onClick={onAddFood}/>
-            <QuickAction icon={<Flame />} label="Activity" className="bg-violet-500/10 text-violet-600 dark:text-violet-400" onClick={onAddActivity}/>
-            <QuickAction icon={<Droplets />} label="Water" className="bg-sky-500/10 text-sky-600 dark:text-sky-400" onClick={onAddWater}/>
-          </div>
-        </div>
+      <section className="grid w-full min-w-0 gap-4 ">
         <div className="card">
           <div className="mb-4 flex items-start justify-between"><div><p className="muted text-xs font-bold uppercase tracking-[.15em]">Daily check-in</p><h2 className="heading mt-1 text-xl">Weight</h2></div><Scale className="text-pink-500" /></div>
           <div className="grid grid-cols-2 gap-2">
@@ -147,7 +139,7 @@ export function DashboardTab({ date, onAddFood, onAddActivity, onAddWater }: { d
 
       <Modal open={weightTiming !== null} onClose={() => setWeightTiming(null)} title={weightTiming === "morning" ? "Morning weight" : "Bedtime weight"} description="Use the same scale and conditions for a clearer trend." width="max-w-sm" footer={<button className="primary-button w-full" type="submit" form="weight-form"><Scale size={17}/> Save weight</button>}>
         <form id="weight-form" onSubmit={saveWeight} className="space-y-4">
-          <label><span className="label">Weight in pounds</span><input className="input text-lg" name="pounds" type="number" min="50" max="1000" step="0.1" required autoFocus defaultValue={dayWeight.find((entry) => entry.timing === weightTiming)?.pounds} placeholder="182.4" /></label>
+          <label><span className="label">Weight in pounds</span><input className="input text-lg" name="pounds" type="number" inputMode="decimal" min="50" max="1000" step="0.1" required defaultValue={dayWeight.find((entry) => entry.timing === weightTiming)?.pounds} placeholder="182.4" /></label>
         </form>
       </Modal>
     </div>
@@ -162,5 +154,4 @@ function MacroCard({ label, value, goal, color }: { label: string; value: number
   return <div className="card !rounded-2xl !p-3 sm:!p-4"><div className="flex items-center justify-between"><p className="text-xs font-bold">{label}</p><span className="muted hidden text-[10px] sm:block">{Math.round(percent)}%</span></div><p className="heading mt-1 text-lg sm:text-2xl">{Math.round(value)}<span className="muted ml-0.5 text-xs">g</span></p><div className="mt-2 h-1.5 overflow-hidden rounded-full bg-violet-500/8"><div className={`h-full rounded-full ${color}`} style={{ width: `${percent}%` }}/></div></div>;
 }
 function LegendDot({ color, text }: { color: string; text: string }) { return <span className="muted flex items-center gap-1.5"><i className={`size-2 rounded-full ${color}`} />{text}</span>; }
-function QuickAction({ icon, label, className, onClick }: { icon: React.ReactNode; label: string; className: string; onClick: () => void }) { return <button type="button" className={`flex min-h-24 flex-col items-center justify-center gap-2 rounded-2xl text-sm font-bold transition hover:-translate-y-0.5 ${className}`} onClick={onClick}><span className="[&>svg]:size-5">{icon}</span>{label}</button>; }
 function WeightButton({ icon, title, value, onClick }: { icon: React.ReactNode; title: string; value?: number; onClick: () => void }) { return <button type="button" className="subtle-card flex min-h-24 flex-col items-start justify-between p-3 text-left transition hover:border-violet-400" onClick={onClick}><span className="text-pink-500">{icon}</span><span><span className="block text-xs font-bold">{title}</span><span className="muted text-xs">{value ? `${value} lb` : "Add weight"}</span></span></button>; }

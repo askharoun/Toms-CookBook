@@ -60,17 +60,27 @@ export function decodeEanLine(pixels: Uint8ClampedArray | number[]): string | nu
 }
 export function decodeEanFrame(video: HTMLVideoElement, canvas: HTMLCanvasElement): string | null {
   if (!video.videoWidth || !video.videoHeight) return null;
-  canvas.width = Math.min(video.videoWidth, 1280);
-  canvas.height = Math.round(video.videoHeight * canvas.width / video.videoWidth);
+  const width = Math.min(video.videoWidth, 1920);
+  const height = Math.round(video.videoHeight * width / video.videoWidth);
   const context = canvas.getContext("2d", { willReadFrequently: true });
   if (!context) return null;
-  context.drawImage(video, 0, 0, canvas.width, canvas.height);
-  for (const fraction of [.5, .4, .6, .3, .7]) {
-    const rgba = context.getImageData(0, Math.floor(canvas.height * fraction), canvas.width, 1).data;
-    const line = new Uint8ClampedArray(canvas.width);
-    for (let x = 0; x < canvas.width; x++) line[x] = (rgba[x * 4] + rgba[x * 4 + 1] + rgba[x * 4 + 2]) / 3;
-    const code = decodeEanLine(line) || decodeEanLine(line.reverse());
-    if (code) return code;
+  // Try horizontal and vertical barcodes without asking the user to rotate the phone.
+  for (const rotated of [false, true]) {
+    const frameWidth = rotated ? height : width;
+    const frameHeight = rotated ? width : height;
+    if (canvas.width !== frameWidth) canvas.width = frameWidth;
+    if (canvas.height !== frameHeight) canvas.height = frameHeight;
+    context.save();
+    if (rotated) { context.translate(height, 0); context.rotate(Math.PI / 2); }
+    context.drawImage(video, 0, 0, width, height);
+    context.restore();
+    const line = new Uint8ClampedArray(frameWidth);
+    for (const fraction of [.5, .45, .55, .35, .65, .25, .75]) {
+      const rgba = context.getImageData(0, Math.floor(frameHeight * fraction), frameWidth, 1).data;
+      for (let x = 0; x < frameWidth; x++) line[x] = (rgba[x * 4] + rgba[x * 4 + 1] + rgba[x * 4 + 2]) / 3;
+      const code = decodeEanLine(line) || decodeEanLine(line.reverse());
+      if (code) return code;
+    }
   }
   return null;
 }
