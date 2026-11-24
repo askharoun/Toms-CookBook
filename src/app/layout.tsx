@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   title: "Tom’s CookBook",
   description: "Private food, fitness, water, and weight tracking on your device.",
   applicationName: "Tom’s CookBook",
-  icons: { icon: "/icons/fire-32.png", apple: "/icons/fire-180.png" },
+  icons: { icon: "/icons/fire-32.png", apple: "/icons/themed/fire-violet-dark-180.png" },
   manifest: "/manifest.webmanifest",
   appleWebApp: { capable: true, statusBarStyle: "default", title: "Tom’s CookBook" },
 };

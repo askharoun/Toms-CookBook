@@ -9,6 +9,8 @@ export function DynamicFavicon() {
     let disposed = false;
     let frame = 0;
     let ownedLink: HTMLLinkElement | null = null;
+    const installOriginals = new Map<HTMLLinkElement, { href: string; sizes: string; type: string }>();
+    const addedInstallLinks: HTMLLinkElement[] = [];
     const originals = new Map<HTMLLinkElement, { href: string; type: string; sizes: string }>();
     const gradient = (context: CanvasRenderingContext2D, size: number, angle: number, start: string, end: string) => {
       const radians = angle * Math.PI / 180;
@@ -18,7 +20,25 @@ export function DynamicFavicon() {
       result.addColorStop(0, start); result.addColorStop(1, end);
       return result;
     };
+    const syncInstallIcons = () => {
+      const color = ["violet", "emerald", "rose"].includes(root.dataset.accent || "") ? root.dataset.accent! : "violet";
+      const mode = root.classList.contains("dark") ? "dark" : "light";
+      for (const rel of ["apple-touch-icon", "apple-touch-icon-precomposed", "manifest"]) {
+        const links = [...document.head.querySelectorAll<HTMLLinkElement>(`link[rel="${rel}"]`)];
+        if (!links.length && rel !== "apple-touch-icon-precomposed") {
+          const link = document.createElement("link"); link.rel = rel; document.head.appendChild(link); addedInstallLinks.push(link); links.push(link);
+        }
+        for (const link of links) {
+          if (!installOriginals.has(link) && !addedInstallLinks.includes(link)) installOriginals.set(link, { href: link.href, sizes: link.sizes.value, type: link.type });
+          const href = rel === "manifest" ? `/manifests/${color}-${mode}.webmanifest` : `/icons/themed/fire-${color}-${mode}-180.png`;
+          if (link.getAttribute("href") !== href) link.setAttribute("href", href);
+          if (rel !== "manifest") { link.sizes.value = "180x180"; link.type = "image/png"; }
+        }
+      }
+    };
     const render = () => {
+      if (disposed) return;
+      syncInstallIcons();
       if (disposed || !flame.complete || !flame.naturalWidth) return;
       const styles = getComputedStyle(root);
       const accent = `rgb(${styles.getPropertyValue("--accent").trim()})`;
@@ -61,6 +81,8 @@ export function DynamicFavicon() {
     return () => {
       disposed = true; observer.disconnect(); cancelAnimationFrame(frame); flame.onload = null;
       ownedLink?.remove();
+      addedInstallLinks.forEach(link => link.remove());
+      for (const [link, original] of installOriginals) { link.href = original.href; link.sizes.value = original.sizes; link.type = original.type; }
       for (const [link, original] of originals) { link.href = original.href; link.type = original.type; link.sizes.value = original.sizes; }
     };
   }, []);

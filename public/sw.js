@@ -1,5 +1,10 @@
-const CACHE_NAME = "toms-cookbook-v14";
+const CACHE_NAME = "toms-cookbook-v15";
 const APP_SHELL = ["/", "/manifest.webmanifest", "/icon", "/apple-icon", "/pwa-icon-192", "/pwa-icon-512", "/icons/fire-64.png", "/icons/fire-192.png", "/icons/fire-512.png", "/assets/logo.png", "/assets/confirm.svg", "/assets/scanner.svg", "/assets/water.webm"];
+
+for (const color of ["violet", "emerald", "rose"]) for (const mode of ["light", "dark"]) {
+  APP_SHELL.push(`/manifests/${color}-${mode}.webmanifest`);
+  for (const size of [180, 192, 512]) APP_SHELL.push(`/icons/themed/fire-${color}-${mode}-${size}.png`);
+}
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));
