@@ -1,4 +1,4 @@
-const CACHE_NAME = "toms-cookbook-v13";
+const CACHE_NAME = "toms-cookbook-v14";
 const APP_SHELL = ["/", "/manifest.webmanifest", "/icon", "/apple-icon", "/pwa-icon-192", "/pwa-icon-512", "/icons/fire-64.png", "/icons/fire-192.png", "/icons/fire-512.png", "/assets/logo.png", "/assets/confirm.svg", "/assets/scanner.svg", "/assets/water.webm"];
 
 self.addEventListener("install", (event) => {

@@ -391,9 +391,6 @@ summary:focus-visible { outline: 3px solid rgb(var(--accent-soft)); outline-offs
 .calendar-day:hover:not(:disabled) { background: rgb(var(--accent) / .1); }
 .calendar-day[aria-current="date"] { box-shadow: inset 0 0 0 1px rgb(var(--accent-soft)); }
 .calendar-day.selected, .calendar-day.selected:hover { background: rgb(var(--accent)); color: white; }
-.reminder-preview { display: grid; grid-template-columns: 48px minmax(0, 1fr); align-items: center; gap: 16px; padding: 18px; background: rgb(var(--accent) / .06); border-radius: 20px; }
-.reminder-preview > button { grid-column: 1 / -1; margin-top: 4px; }
-.reminder-preview-icon { display: grid; place-items: center; width: 48px; height: 48px; background: rgb(var(--accent) / .12); color: rgb(var(--accent)); border-radius: 16px; }
 input[type="checkbox"] { appearance: none; -webkit-appearance: none; flex-shrink: 0; width: 22px; height: 22px; border: 1.5px solid rgb(var(--line)); border-radius: 7px; background: rgb(var(--card)); cursor: pointer; }
 input[type="checkbox"]:checked { background-color: rgb(var(--accent)); border-color: rgb(var(--accent)); background-position: center; background-size: 16px; background-repeat: no-repeat; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='m4 10 4 4 8-8' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
 details > summary { list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 40px; }

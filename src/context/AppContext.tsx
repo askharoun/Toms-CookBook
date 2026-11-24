@@ -120,8 +120,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       try {
         saveAppData(localStorage, fresh);
         for (const key of LEGACY_STORAGE_KEYS) localStorage.removeItem(key);
-        // Keep the one-time demo consumed; a reset should leave no pending reminders.
-        localStorage.setItem("toms-cookbook:reminder-preview:2026-11-23-v1", "shown");
+        localStorage.removeItem("toms-cookbook:reminder-preview:2026-11-23-v1");
       } catch { notify("Could not reset local storage. Please try again.", "error"); return false; }
       pendingConfirmation.current = null; setConfirmation(null); clearTimeout(toastTimer.current); setToast(null); setData(fresh);
       return true;
