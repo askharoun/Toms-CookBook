@@ -16,7 +16,7 @@ export function SaveFeedback() {
   const { item, exiting } = useNotificationPresence(confirmation);
   if (!item) return null;
   return <div key={item.id} className={`save-feedback notification-motion ${exiting ? "is-exiting" : ""}`} role="status">
-    {reduced ? <Check size={20} className="shrink-0 text-emerald-500" /> : item.kind === "food" ? <Image unoptimized src={`/assets/confirm.svg?event=${encodeURIComponent(item.id)}`} width={48} height={48} alt="" className="confirmation-art" /> : <span className="water-animation"><video src="/assets/water.webm" autoPlay muted playsInline loop preload="auto" aria-hidden="true" /></span>}
+    {reduced ? <Check size={20} className="shrink-0 text-emerald-500" /> : item.kind === "food" ? <Image unoptimized src={`/assets/confirm.svg?event=${encodeURIComponent(item.id)}`} width={48} height={48} alt="" className="confirmation-art" /> : <span className="water-animation"><video className="water-desktop" src="/assets/water.webm" autoPlay muted playsInline loop preload="auto" aria-hidden="true" /><Image className="water-mobile" unoptimized src={`/assets/water.gif?event=${encodeURIComponent(item.id)}`} width={36} height={36} alt="" /></span>}
     <strong>{item.kind === "food" ? "Food logged" : `+${item.amount} oz logged`}</strong>
   </div>;
 }
