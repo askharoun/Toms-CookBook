@@ -29,6 +29,7 @@ const NAV_ITEMS = [
 export function AppShell() {
   const { data, hydrated, toast, setTheme, setColorway, replaceData, resetDay, resetApp, setDisplayName, updateGoals, notify } = useApp();
   const [namePromptDismissed, setNamePromptDismissed] = useState(false);
+  const [headerScrolled, setHeaderScrolled] = useState(false);
   const [helpVisible, setHelpVisible] = useState(false);
   const [hardResetOpen, setHardResetOpen] = useState(false);
   const [resetPhrase, setResetPhrase] = useState("");
@@ -51,6 +52,13 @@ export function AppShell() {
     const handler = (event: Event) => { event.preventDefault(); setInstallPrompt(event as BeforeInstallPromptEvent); };
     window.addEventListener("beforeinstallprompt", handler);
     return () => window.removeEventListener("beforeinstallprompt", handler);
+  }, []);
+
+  useEffect(() => {
+    const update = () => setHeaderScrolled(window.scrollY > 4);
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    return () => window.removeEventListener("scroll", update);
   }, []);
 
   const scrollToTop = () => window.scrollTo({ top: 0, left: 0, behavior: "auto" });
@@ -131,7 +139,7 @@ export function AppShell() {
 
       <DynamicFavicon />
       <main className="min-w-0 pb-28 lg:col-start-2 lg:pb-8">
-        <header className="app-header sticky top-0 z-30 border-b px-4 py-3 lg:static lg:border-0 lg:px-8 lg:pb-4 lg:pt-7">
+        <header className={`app-header ${headerScrolled ? "is-scrolled" : ""} sticky top-0 z-30 border-b px-4 py-3 lg:static lg:border-0 lg:px-8 lg:pb-4 lg:pt-7`}>
           <div className="mx-auto flex max-w-[1380px] items-center justify-between gap-3">
             <div className="lg:hidden"><Logo compact /></div>
             <div className="hidden min-w-0 lg:block"><p className="muted text-[10px] font-extrabold uppercase tracking-[.18em]">{heading.eyebrow}</p><h1 className="heading mt-0.5 truncate text-3xl">{heading.title}</h1><p className="help-copy muted mt-1 text-sm">{heading.description}</p></div>

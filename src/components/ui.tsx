@@ -43,7 +43,7 @@ export function Modal({
   const backdrop = useRef<HTMLDivElement>(null);
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
-  const [keyboardOpen, setKeyboardOpen] = useState(false);
+
   const titleId = useId();
   useEffect(() => {
     if (!open) return;
@@ -71,7 +71,7 @@ export function Modal({
       }
       const focused = document.activeElement;
       const editing = focused instanceof HTMLInputElement || focused instanceof HTMLTextAreaElement;
-      setKeyboardOpen(editing && window.innerHeight - height > 120);
+
       clearTimeout(scrollTimer);
       if (editing && panel.current?.contains(focused)) scrollTimer = setTimeout(() => {
         focused.scrollIntoView({ block: "nearest", behavior: "auto" });
@@ -98,7 +98,7 @@ export function Modal({
   }, [open]);
   if (!open) return null;
   return (
-    <div ref={backdrop} data-keyboard={keyboardOpen} className="popup-backdrop fixed inset-0 isolate z-[200] flex items-center justify-center before:pointer-events-none before:absolute before:-inset-20 before:bg-ink/65 before:backdrop-blur-md sm:items-center" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
+    <div ref={backdrop} className="popup-backdrop fixed inset-0 isolate z-[200] flex items-center justify-center before:pointer-events-none before:absolute before:-inset-20 before:bg-ink/65 before:backdrop-blur-md sm:items-center" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
       <div className={`popup-dialog popup-panel popup-surface relative z-10 flex w-full ${width} min-w-0 flex-col overflow-hidden rounded-[1.75rem] sm:rounded-[2rem]`} ref={panel} role="dialog" aria-modal="true" aria-labelledby={titleId}>
         <div className="shrink-0 px-5 pt-4 sm:px-6 sm:pt-6">
           <div className="mb-5 flex items-start justify-between gap-4">
@@ -110,7 +110,6 @@ export function Modal({
           </div>
         </div>
         {children && <div className="popup-body min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-5 pb-5 sm:px-6">{children}</div>}
-        {keyboardOpen && <div className="keyboard-toolbar"><button type="button" onClick={() => { (document.activeElement as HTMLElement | null)?.blur(); setKeyboardOpen(false); }}>Done typing</button></div>}
         {footer && <div className="popup-footer shrink-0 px-5 pb-5 pt-3 sm:px-6 sm:pb-6">{footer}</div>}
       </div>
     </div>
